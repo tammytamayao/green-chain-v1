@@ -12,7 +12,8 @@ const _tokenKey = 'auth_token';
 
 Uri _u(String p) => Uri.parse('$apiBase$p');
 
-Future<void> saveToken(String token) => _storage.write(key: _tokenKey, value: token);
+Future<void> saveToken(String token) =>
+    _storage.write(key: _tokenKey, value: token);
 Future<String?> getToken() => _storage.read(key: _tokenKey);
 Future<void> clearToken() => _storage.delete(key: _tokenKey);
 
@@ -26,7 +27,6 @@ Future<void> registerUser({
   required String username,
   required String password,
   required String type, // "farmer" | "disposer" | "driver"
-
   // farmer
   String? farmName,
   String? farmLocation,
@@ -87,7 +87,10 @@ Future<void> loginUser(String username, String password) async {
 Future<Map<String, dynamic>?> me() async {
   final token = await getToken();
   if (token == null) return null;
-  final r = await http.get(_u('/me'), headers: {'Authorization': 'Bearer $token'});
+  final r = await http.get(
+    _u('/me'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
   if (r.statusCode != 200) return null;
   return jsonDecode(r.body) as Map<String, dynamic>;
 }
@@ -95,7 +98,10 @@ Future<Map<String, dynamic>?> me() async {
 // (unchanged) authorized helpers
 Future<List<Map<String, dynamic>>> fetchTodos() async {
   final token = await getToken();
-  final r = await http.get(_u('/todos'), headers: {'Authorization': 'Bearer $token'});
+  final r = await http.get(
+    _u('/todos'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
   if (r.statusCode != 200) throw Exception('GET /todos failed: ${r.body}');
   return (jsonDecode(r.body) as List).cast<Map<String, dynamic>>();
 }
@@ -104,7 +110,10 @@ Future<void> addTodo(String title) async {
   final token = await getToken();
   final r = await http.post(
     _u('/todos'),
-    headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
     body: jsonEncode({'title': title}),
   );
   if (r.statusCode != 201) throw Exception('POST /todos failed: ${r.body}');
@@ -112,6 +121,10 @@ Future<void> addTodo(String title) async {
 
 Future<void> toggleTodo(int id) async {
   final token = await getToken();
-  final r = await http.patch(_u('/todos/$id'), headers: {'Authorization': 'Bearer $token'});
-  if (r.statusCode != 200) throw Exception('PATCH /todos/$id failed: ${r.body}');
+  final r = await http.patch(
+    _u('/todos/$id'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  if (r.statusCode != 200)
+    throw Exception('PATCH /todos/$id failed: ${r.body}');
 }

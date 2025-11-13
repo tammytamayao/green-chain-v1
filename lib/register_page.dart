@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'auth_api.dart';
+import 'ui/green_theme.dart'; // <-- adjust path if different
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, required this.onRegistered});
@@ -63,8 +64,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
     _licenseId.dispose();
 
-    for (final v in _vehicles) { v.dispose(); }
-
+    for (final v in _vehicles) {
+      v.dispose();
+    }
     super.dispose();
   }
 
@@ -83,13 +85,21 @@ class _RegisterPageState extends State<RegisterPage> {
     final fn = _firstName.text.trim();
     final ln = _lastName.text.trim();
     final cn = _contactNumber.text.trim();
-    final u  = _username.text.trim();
-    final p  = _password.text;
-    final c  = _confirm.text;
-    final t  = _type ?? '';
+    final u = _username.text.trim();
+    final p = _password.text;
+    final c = _confirm.text;
+    final t = _type ?? '';
 
     // basic validation
-    if ([fn, ln, cn, u, p, c, t].any((v) => (v is String) ? v.isEmpty : false)) {
+    if ([
+      fn,
+      ln,
+      cn,
+      u,
+      p,
+      c,
+      t,
+    ].any((v) => (v is String) ? v.isEmpty : false)) {
       setState(() => _error = 'All fields are required');
       return;
     }
@@ -110,20 +120,24 @@ class _RegisterPageState extends State<RegisterPage> {
       farmName = _farmName.text.trim();
       farmLocation = _farmLocation.text.trim();
       if (farmName.isEmpty || farmLocation.isEmpty) {
-        setState(() => _error = 'Farm name and location are required for farmers');
+        setState(
+          () => _error = 'Farm name and location are required for farmers',
+        );
         return;
       }
     } else if (t == 'disposer') {
       entity = _entity.text.trim();
       business = _business.text.trim();
       if (entity.isEmpty || business.isEmpty) {
-        setState(() => _error = 'Entity and business are required for disposers');
+        setState(
+          () => _error = 'Entity and business are required for disposers',
+        );
         return;
       }
     } else if (t == 'driver') {
       licenseId = _licenseId.text.trim();
       if (licenseId.isEmpty) {
-        setState(() => _error = 'Driver name and license ID are required for drivers');
+        setState(() => _error = 'License ID is required for drivers');
         return;
       }
       if (_vehicles.isEmpty) {
@@ -135,18 +149,20 @@ class _RegisterPageState extends State<RegisterPage> {
         final klass = v.klass.text.trim();
         final plate = v.plate.text.trim();
         if ([model, klass, plate].any((s) => s.isEmpty)) {
-          setState(() => _error = 'Vehicle model, class, and plate number are required');
+          setState(
+            () =>
+                _error = 'Vehicle model, class, and plate number are required',
+          );
           return;
         }
-        vehicles.add({
-          'model': model,
-          'class': klass,
-          'plate_number': plate,
-        });
+        vehicles.add({'model': model, 'class': klass, 'plate_number': plate});
       }
     }
 
-    setState(() { _busy = true; _error = null; });
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       await registerUser(
         firstName: fn,
@@ -176,10 +192,36 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final border = OutlineInputBorder(borderRadius: BorderRadius.circular(12));
+    final baseBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    );
+    final enabledBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    );
+    final focusedBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: GreenTheme.primary, width: 2),
+    );
+
+    InputDecoration dec(String label, IconData icon) {
+      return InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: baseBorder,
+        enabledBorder: enabledBorder,
+        focusedBorder: focusedBorder,
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
+      appBar: AppBar(
+        title: const Text('Create account'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -193,11 +235,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: TextField(
                       controller: _firstName,
                       textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(
-                        labelText: 'First name',
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                        border: border,
-                      ),
+                      decoration: dec('First name', Icons.badge_outlined),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -205,11 +243,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: TextField(
                       controller: _lastName,
                       textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(
-                        labelText: 'Last name',
-                        prefixIcon: const Icon(Icons.badge),
-                        border: border,
-                      ),
+                      decoration: dec('Last name', Icons.badge),
                     ),
                   ),
                 ],
@@ -219,44 +253,30 @@ class _RegisterPageState extends State<RegisterPage> {
               TextField(
                 controller: _contactNumber,
                 keyboardType: TextInputType.phone,
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ -]'))],
-                decoration: InputDecoration(
-                  labelText: 'Contact number',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  border: border,
-                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+ -]')),
+                ],
+                decoration: dec('Contact number', Icons.phone_outlined),
               ),
               const SizedBox(height: 16),
 
               TextField(
                 controller: _username,
-                decoration: InputDecoration(
-                  labelText: 'Username',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: border,
-                ),
+                decoration: dec('Username', Icons.person_outline),
               ),
               const SizedBox(height: 16),
 
               TextField(
                 controller: _password,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: border,
-                ),
+                decoration: dec('Password', Icons.lock_outline),
               ),
               const SizedBox(height: 16),
 
               TextField(
                 controller: _confirm,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Confirm password',
-                  prefixIcon: const Icon(Icons.lock_reset),
-                  border: border,
-                ),
+                decoration: dec('Confirm password', Icons.lock_reset),
               ),
               const SizedBox(height: 16),
 
@@ -264,14 +284,15 @@ class _RegisterPageState extends State<RegisterPage> {
               DropdownButtonFormField<String>(
                 value: _type,
                 items: _types
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t[0].toUpperCase() + t.substring(1))))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t[0].toUpperCase() + t.substring(1)),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() => _type = v),
-                decoration: InputDecoration(
-                  labelText: 'User type',
-                  prefixIcon: const Icon(Icons.category_outlined),
-                  border: border,
-                ),
+                decoration: dec('User type', Icons.category_outlined),
               ),
 
               const SizedBox(height: 16),
@@ -280,53 +301,36 @@ class _RegisterPageState extends State<RegisterPage> {
               if (_type == 'farmer') ...[
                 TextField(
                   controller: _farmName,
-                  decoration: InputDecoration(
-                    labelText: 'Farm name',
-                    prefixIcon: const Icon(Icons.agriculture_outlined),
-                    border: border,
-                  ),
+                  decoration: dec('Farm name', Icons.agriculture_outlined),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _farmLocation,
-                  decoration: InputDecoration(
-                    labelText: 'Farm location',
-                    prefixIcon: const Icon(Icons.place_outlined),
-                    border: border,
-                  ),
+                  decoration: dec('Farm location', Icons.place_outlined),
                 ),
               ] else if (_type == 'disposer') ...[
                 TextField(
                   controller: _entity,
-                  decoration: InputDecoration(
-                    labelText: 'Entity',
-                    prefixIcon: const Icon(Icons.apartment_outlined),
-                    border: border,
-                  ),
+                  decoration: dec('Entity', Icons.apartment_outlined),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _business,
-                  decoration: InputDecoration(
-                    labelText: 'Business',
-                    prefixIcon: const Icon(Icons.business_center_outlined),
-                    border: border,
-                  ),
+                  decoration: dec('Business', Icons.business_center_outlined),
                 ),
               ] else if (_type == 'driver') ...[
                 const SizedBox(height: 16),
                 TextField(
                   controller: _licenseId,
-                  decoration: InputDecoration(
-                    labelText: 'License ID',
-                    prefixIcon: const Icon(Icons.credit_card_outlined),
-                    border: border,
-                  ),
+                  decoration: dec('License ID', Icons.credit_card_outlined),
                 ),
                 const SizedBox(height: 16),
 
                 // Vehicles list
-                Text('Vehicles', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Vehicles',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 for (int i = 0; i < _vehicles.length; i++)
                   Padding(
@@ -334,12 +338,22 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: _VehicleCard(
                       fields: _vehicles[i],
                       onRemove: () => _removeVehicle(i),
+                      focusedBorder: focusedBorder,
+                      enabledBorder: enabledBorder,
+                      baseBorder: baseBorder,
                     ),
                   ),
                 OutlinedButton.icon(
                   onPressed: _addVehicle,
                   icon: const Icon(Icons.add),
                   label: const Text('Add vehicle'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: GreenTheme.primary,
+                    side: const BorderSide(color: GreenTheme.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ],
 
@@ -348,7 +362,10 @@ class _RegisterPageState extends State<RegisterPage> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
 
               _busy
@@ -360,8 +377,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         icon: const Icon(Icons.person_add),
                         label: const Text('Register'),
                         style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              GreenTheme.primary, // <-- standout button
+                          foregroundColor: Colors.white,
+                          elevation: 2,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
@@ -388,17 +411,40 @@ class _VehicleFields {
 }
 
 class _VehicleCard extends StatelessWidget {
-  const _VehicleCard({required this.fields, required this.onRemove, super.key});
+  const _VehicleCard({
+    required this.fields,
+    required this.onRemove,
+    required this.baseBorder,
+    required this.enabledBorder,
+    required this.focusedBorder,
+    super.key,
+  });
   final _VehicleFields fields;
   final VoidCallback onRemove;
 
+  final OutlineInputBorder baseBorder;
+  final OutlineInputBorder enabledBorder;
+  final OutlineInputBorder focusedBorder;
+
+  InputDecoration _dec(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      border: baseBorder,
+      enabledBorder: enabledBorder,
+      focusedBorder: focusedBorder,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final border = OutlineInputBorder(borderRadius: BorderRadius.circular(12));
     return Card(
       elevation: 0,
       color: Colors.grey.shade50,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -408,22 +454,14 @@ class _VehicleCard extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: fields.model,
-                    decoration: InputDecoration(
-                      labelText: 'Model',
-                      prefixIcon: const Icon(Icons.directions_car_outlined),
-                      border: border,
-                    ),
+                    decoration: _dec('Model', Icons.directions_car_outlined),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: fields.klass,
-                    decoration: InputDecoration(
-                      labelText: 'Class',
-                      prefixIcon: const Icon(Icons.category_outlined),
-                      border: border,
-                    ),
+                    decoration: _dec('Class', Icons.category_outlined),
                   ),
                 ),
               ],
@@ -435,11 +473,14 @@ class _VehicleCard extends StatelessWidget {
                   child: TextField(
                     controller: fields.plate,
                     textCapitalization: TextCapitalization.characters,
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9 -]'))],
-                    decoration: InputDecoration(
-                      labelText: 'Plate number',
-                      prefixIcon: const Icon(Icons.confirmation_number_outlined),
-                      border: border,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'[A-Za-z0-9 -]'),
+                      ),
+                    ],
+                    decoration: _dec(
+                      'Plate number',
+                      Icons.confirmation_number_outlined,
                     ),
                   ),
                 ),
