@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/driver_home.dart';
 import 'auth_api.dart';
 import 'register_page.dart';
-import 'todos_page.dart'; // <-- add this import
+import 'home_farmer.dart'; // <-- for farmer landing
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, required this.onAuthed});
@@ -18,23 +19,32 @@ class _LoginPageState extends State<LoginPage> {
   String? _error;
 
   Future<void> _doLogin() async {
-    setState(() { _busy = true; _error = null; });
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       await loginUser(_username.text.trim(), _password.text);
 
-      // Optional: verify immediately
+      // Verify immediately and branch by role
       final profile = await me();
       if (profile == null) {
         throw Exception('Could not verify session. Please try again.');
       }
 
       if (!mounted) return;
-      // Navigate straight to Todos; remove the underlying Login screen.
+      final type = (profile['type'] as String?) ?? '';
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const TodosPage()),
+        MaterialPageRoute(
+          builder: (_) => type == 'farmer'
+              ? const FarmerHomePage()
+              : const DriverHomePage(), // placeholder for other roles
+        ),
       );
-      // If you still want to inform MyApp to refresh, you can keep this:
+
+      // Optional: also notify MyApp to refresh its FutureBuilder if you keep it
       // widget.onAuthed();
     } catch (e) {
       setState(() => _error = e.toString());
@@ -81,7 +91,10 @@ class _LoginPageState extends State<LoginPage> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               _busy
                   ? const CircularProgressIndicator()
@@ -104,14 +117,22 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => RegisterPage(onRegistered: () {
-                        // If user registers, go straight to Todos as well.
-                        if (!mounted) return;
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const TodosPage()),
-                        );
-                      }),
+                      builder: (_) => RegisterPage(
+                        onRegistered: () async {
+                          // After successful registration, branch by role too
+                          final profile = await me();
+                          if (!mounted) return;
+                          final type = (profile?['type'] as String?) ?? '';
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => type == 'farmer'
+                                  ? const FarmerHomePage()
+                                  : const DriverHomePage(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   );
                 },
