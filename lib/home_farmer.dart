@@ -231,7 +231,7 @@ class _ProduceCard extends StatelessWidget {
                 assetPath,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
-                    Image.asset('assets/default_veggie.jpg', fit: BoxFit.cover),
+                    Image.asset('assets/romaine.jpg', fit: BoxFit.cover),
               ),
             ),
             Positioned.fill(

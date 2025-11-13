@@ -320,7 +320,7 @@ class _DemandSection extends StatelessWidget {
                         data.asset,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/default_veggie.jpg',
+                          'assets/romaine.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),
