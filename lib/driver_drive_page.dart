@@ -33,19 +33,19 @@ class _DriverDrivePageState extends State<DriverDrivePage> {
       from: 'Abatan, Buguias',
       farmer: 'Farmer D',
       weightKg: 12,
-      to: 'Warehouse',
+      to: 'BAPTC',
     ),
     _PickupRow(
       from: 'Abatan, Buguias',
       farmer: 'Farmer A',
       weightKg: 11,
-      to: 'Warehouse',
+      to: 'BAPTC',
     ),
     _PickupRow(
       from: 'Abatan, Buguias',
       farmer: 'Farmer B',
       weightKg: 3,
-      to: 'Warehouse',
+      to: 'BAPTC',
     ),
   ];
 
@@ -218,7 +218,7 @@ class _DriverDrivePageState extends State<DriverDrivePage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Current location: ${widget.currentLocation}',
+                            'Location: ${widget.currentLocation}',
                             style: TextStyle(color: Colors.grey.shade700),
                           ),
                         ],
@@ -381,10 +381,20 @@ class _DriverDrivePageState extends State<DriverDrivePage> {
                     label: const Text('Start driving'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: GreenTheme.primary,
+                      foregroundColor:
+                          Colors.white, // 👈 makes text & icon white
+                      disabledBackgroundColor: Colors.grey.shade300,
+                      disabledForegroundColor: Colors.grey.shade600,
                       padding: const EdgeInsets.symmetric(vertical: 14),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                      elevation: 2,
+                      shadowColor: Colors.black.withOpacity(0.25),
                     ),
                   ),
                 ),
