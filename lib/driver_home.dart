@@ -98,150 +98,207 @@ class _DriverHomePageState extends State<DriverHomePage> {
     final weatherText =
         (_profile?['weather_label'] ?? '16 °C | Thunderstorm') as String;
 
+    // Use a taller map: ~35% of screen height
+    final screenHeight = MediaQuery.of(context).size.height;
+    final mapHeight = screenHeight * 0.5;
+
     return Scaffold(
       backgroundColor: GreenTheme.softBg,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _load,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              const BannerHeaderSliver(),
+        child: Column(
+          children: [
+            // Scrollable content (title, map, vehicle card)
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _load,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    const BannerHeaderSliver(),
 
-              if (loading)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: CircularProgressIndicator(color: GreenTheme.primary),
-                  ),
-                )
-              else ...[
-                if (_error != null)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-
-                // Title + date/time
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'DRIVING DETAILS',
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
+                    if (loading)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: CircularProgressIndicator(
                             color: GreenTheme.primary,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _niceNow(),
-                          style: TextStyle(
-                            fontSize: 13,
-                            letterSpacing: 0.2,
-                            color: Colors.grey.shade800,
-                            fontWeight: FontWeight.w600,
+                      )
+                    else ...[
+                      if (_error != null)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
 
-                // Current Location
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: _InfoCardRow(
-                      icon: Icons.location_on_outlined,
-                      trailing: IconButton(
-                        icon: const Icon(Icons.my_location),
-                        color: GreenTheme.primary,
-                        tooltip: 'Refresh location',
-                        onPressed: _load,
+                      // Title + date/time
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'DRIVING DETAILS',
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  color: GreenTheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _niceNow(),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  letterSpacing: 0.2,
+                                  color: Colors.grey.shade800,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        currentLocation,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ),
 
-                // Weather
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: _InfoCardRow(
-                      icon: Icons.cloud_queue_outlined,
-                      child: Text(
-                        weatherText,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Vehicle chooser
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: _VehicleCard(
-                      vehicles: _vehicles,
-                      selectedIndex: _selectedVehicleIndex,
-                      onChanged: (i) =>
-                          setState(() => _selectedVehicleIndex = i),
-                    ),
-                  ),
-                ),
-
-                // Go to Drive page
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.directions_run_rounded),
-                        label: const Text('Open Drive Requests'),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => DriverDrivePage(
-                                currentLocation: currentLocation,
-                                selectedVehicle: (_vehicles.isNotEmpty)
-                                    ? _vehicles[_selectedVehicleIndex]
-                                    : null,
+                      // Map space + overlaid location & weather cards
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                          child: SizedBox(
+                            height: mapHeight,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Placeholder for Google Map widget
+                                  Container(
+                                    color: Colors.grey.shade300,
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Icon(
+                                            Icons.map_outlined,
+                                            size: 48,
+                                            color: Colors.black54,
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            'Google Maps preview',
+                                            style: TextStyle(
+                                              color: Colors.black54,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Overlays: current location + weather
+                                  Positioned(
+                                    left: 10,
+                                    right: 10,
+                                    bottom: 10,
+                                    child: Column(
+                                      children: [
+                                        _InfoCardRow(
+                                          icon: Icons.location_on_outlined,
+                                          trailing: IconButton(
+                                            icon: const Icon(Icons.my_location),
+                                            color: GreenTheme.primary,
+                                            tooltip: 'Refresh location',
+                                            onPressed: _load,
+                                          ),
+                                          child: Text(
+                                            currentLocation,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        _InfoCardRow(
+                                          icon: Icons.cloud_queue_outlined,
+                                          child: Text(
+                                            weatherText,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: GreenTheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                       ),
+
+                      // Vehicle chooser
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        sliver: SliverToBoxAdapter(
+                          child: _VehicleCard(
+                            vehicles: _vehicles,
+                            selectedIndex: _selectedVehicleIndex,
+                            onChanged: (i) =>
+                                setState(() => _selectedVehicleIndex = i),
+                          ),
+                        ),
+                      ),
+
+                      // Add a bit of breathing room at the bottom of scroll
+                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            // Fixed button at the bottom of the screen
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.directions_run_rounded),
+                  label: const Text('Open Drive Requests'),
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DriverDrivePage(
+                          currentLocation: currentLocation,
+                          selectedVehicle: (_vehicles.isNotEmpty)
+                              ? _vehicles[_selectedVehicleIndex]
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GreenTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                 ),
-              ],
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
 
