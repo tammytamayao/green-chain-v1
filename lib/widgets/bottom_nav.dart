@@ -32,7 +32,6 @@ class BottomNav extends StatelessWidget {
       case UserRole.disposer:
         return (Icons.recycling_outlined, 'Disposals');
       case UserRole.farmer:
-      default:
         return (Icons.inventory_2_rounded, 'Stalls');
     }
   }

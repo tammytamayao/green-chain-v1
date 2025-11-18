@@ -186,7 +186,7 @@ class _StallsPageState extends State<StallsPage> {
       ),
       bottomNavigationBar: BottomNav(
         role: UserRole.farmer,
-        current: AppTab.home,
+        current: AppTab.middle, // ✅ highlight "Stalls" as the active tab
         onHome: _goHome,
         onMiddle: _goStalls, // middle = Stalls for farmers
         onAccount: _goAccount,
@@ -256,6 +256,7 @@ class _DemandSection extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Stalls + kg list
             Expanded(
               flex: 3,
               child: Column(
@@ -295,6 +296,8 @@ class _DemandSection extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+
+            // Circular image preview
             Expanded(
               flex: 2,
               child: AspectRatio(
