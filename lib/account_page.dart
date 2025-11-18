@@ -129,7 +129,9 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                 ),
 
+                // Role-specific cards
                 if (type == 'farmer') ...[
+                  // Farm details
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -149,6 +151,7 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                   ),
                 ] else if (type == 'disposer') ...[
+                  // Business details
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -168,6 +171,7 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                   ),
                 ] else if (type == 'driver') ...[
+                  // Driver + vehicles
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -193,7 +197,7 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                 ],
 
-                // Logout
+                // Logout button
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -267,7 +271,7 @@ class _AccountPageState extends State<AccountPage> {
             );
           }
         },
-        onAccount: () {},
+        onAccount: () {}, // already here
       ),
     );
   }
@@ -305,6 +309,7 @@ class _AccountPageState extends State<AccountPage> {
   static List<Widget> _vehicleRows(dynamic vehiclesJson) {
     if (vehiclesJson is! List) return [const Text('—')];
     if (vehiclesJson.isEmpty) return [const Text('—')];
+
     return vehiclesJson.map<Widget>((v) {
       final model = (v['model'] ?? '—').toString();
       final klass = (v['class'] ?? '—').toString();
