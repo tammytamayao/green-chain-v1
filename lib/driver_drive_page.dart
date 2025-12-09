@@ -394,7 +394,7 @@ class _DriverDrivePageState extends State<DriverDrivePage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       elevation: 2,
-                      shadowColor: Colors.black.withOpacity(0.25),
+                      shadowColor: Colors.black.withAlpha((0.25 * 255).round()),
                     ),
                   ),
                 ),
@@ -575,7 +575,9 @@ class _RowCard extends StatelessWidget {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: isSelected ? GreenTheme.softBg.withOpacity(0.7) : Colors.white,
+        color: isSelected
+            ? GreenTheme.softBg.withAlpha((0.7 * 255).round())
+            : Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isSelected ? GreenTheme.primary : Colors.black26,
@@ -623,10 +625,12 @@ class _ModeToggle extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: GreenTheme.primary.withOpacity(0.3)),
+        border: Border.all(
+          color: GreenTheme.primary.withAlpha((0.3 * 255).round()),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),

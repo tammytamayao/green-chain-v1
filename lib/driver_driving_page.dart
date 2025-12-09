@@ -234,10 +234,12 @@ class _RouteOverlay extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: GreenTheme.primary.withOpacity(0.2)),
+        border: Border.all(
+          color: GreenTheme.primary.withAlpha((0.2 * 255).round()),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withAlpha((0.08 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 6),
           ),
@@ -355,7 +357,7 @@ class _LocationChips extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         margin: const EdgeInsets.only(right: 6),
         decoration: BoxDecoration(
-          color: GreenTheme.primary.withOpacity(0.12),
+          color: GreenTheme.primary.withAlpha((0.12 * 255).round()),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
@@ -391,10 +393,12 @@ class _DetailCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GreenTheme.primary.withOpacity(0.15)),
+        border: Border.all(
+          color: GreenTheme.primary.withAlpha((0.15 * 255).round()),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withAlpha((0.03 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),

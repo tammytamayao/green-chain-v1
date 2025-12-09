@@ -203,7 +203,6 @@ class _ProduceCard extends StatelessWidget {
   final double price;
   final String unit;
   final String assetPath;
-  static const primaryGreen = _FarmerHomePageState.primaryGreen;
   static const chipGreen = _FarmerHomePageState.chipGreen;
 
   @override
@@ -214,7 +213,7 @@ class _ProduceCard extends StatelessWidget {
         borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -255,7 +254,7 @@ class _ProduceCard extends StatelessWidget {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: chipGreen.withOpacity(0.95),
+                  color: chipGreen.withAlpha((0.95 * 255).round()),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

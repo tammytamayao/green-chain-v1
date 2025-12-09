@@ -346,10 +346,12 @@ class _InfoCardRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GreenTheme.primary.withOpacity(0.15)),
+        border: Border.all(
+          color: GreenTheme.primary.withAlpha((0.15 * 255).round()),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withAlpha((0.03 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -396,10 +398,12 @@ class _VehicleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GreenTheme.primary.withOpacity(0.15)),
+        border: Border.all(
+          color: GreenTheme.primary.withAlpha((0.15 * 255).round()),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withAlpha((0.03 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -417,7 +421,7 @@ class _VehicleCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
-            value: (vehicles.isEmpty) ? null : selectedIndex,
+            initialValue: (vehicles.isEmpty) ? null : selectedIndex,
             items: [
               for (int i = 0; i < vehicles.length; i++)
                 DropdownMenuItem<int>(
