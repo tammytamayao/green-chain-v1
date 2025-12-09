@@ -180,6 +180,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                 fit: StackFit.expand,
                                 children: [
                                   // Placeholder for Google Map widget
+                                  //TODO: integrate Google Maps dependency and code
                                   Container(
                                     color: Colors.grey.shade300,
                                     child: Center(
@@ -204,6 +205,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                     ),
                                   ),
                                   // Overlays: current location + weather
+                                  //TODO: extracting real-time data
                                   Positioned(
                                     left: 10,
                                     right: 10,
