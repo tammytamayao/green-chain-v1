@@ -124,7 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                           if (!mounted) return;
                           final type = (profile?['type'] as String?) ?? '';
                           Navigator.pushReplacement(
-                            context,
+                            this.context,
                             MaterialPageRoute(
                               builder: (_) => type == 'farmer'
                                   ? const FarmerHomePage()
