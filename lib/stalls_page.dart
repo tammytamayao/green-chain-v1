@@ -239,11 +239,13 @@ class _DemandSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: primaryGreen.withOpacity(0.25)),
+            border: Border.all(
+              color: primaryGreen.withAlpha((0.25 * 255).round()),
+            ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withAlpha((0.03 * 255).round()),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
               ),
@@ -272,7 +274,9 @@ class _DemandSection extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withAlpha(
+                                (0.05 * 255).round(),
+                              ),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -306,10 +310,12 @@ class _DemandSection extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
-                    border: Border.all(color: primaryGreen.withOpacity(0.25)),
+                    border: Border.all(
+                      color: primaryGreen.withAlpha((0.25 * 255).round()),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withAlpha((0.04 * 255).round()),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),

@@ -29,9 +29,9 @@ class _TodosPageState extends State<TodosPage> {
       _reload();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to add: $e')));
     }
   }
 
@@ -131,8 +131,10 @@ class _TodosPageState extends State<TodosPage> {
                                 _reload();
                               } catch (e) {
                                 if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to toggle: $e')),
+                                ScaffoldMessenger.of(this.context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to toggle: $e'),
+                                  ),
                                 );
                               }
                             },

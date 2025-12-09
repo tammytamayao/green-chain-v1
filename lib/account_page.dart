@@ -352,10 +352,12 @@ class _InfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF5E8C61).withOpacity(0.15)),
+        border: Border.all(
+          color: const Color(0xFF5E8C61).withAlpha((0.15 * 255).round()),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withAlpha((0.03 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),

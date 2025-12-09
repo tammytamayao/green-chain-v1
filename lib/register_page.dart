@@ -91,15 +91,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final t = _type ?? '';
 
     // basic validation
-    if ([
-      fn,
-      ln,
-      cn,
-      u,
-      p,
-      c,
-      t,
-    ].any((v) => (v is String) ? v.isEmpty : false)) {
+    if ([fn, ln, cn, u, p, c, t].any((v) => v.isEmpty)) {
       setState(() => _error = 'All fields are required');
       return;
     }
@@ -282,7 +274,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
               // User type dropdown
               DropdownButtonFormField<String>(
-                value: _type,
+                initialValue: _type,
                 items: _types
                     .map(
                       (t) => DropdownMenuItem(
@@ -417,7 +409,6 @@ class _VehicleCard extends StatelessWidget {
     required this.baseBorder,
     required this.enabledBorder,
     required this.focusedBorder,
-    super.key,
   });
   final _VehicleFields fields;
   final VoidCallback onRemove;

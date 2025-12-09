@@ -125,6 +125,7 @@ Future<void> toggleTodo(int id) async {
     _u('/todos/$id'),
     headers: {'Authorization': 'Bearer $token'},
   );
-  if (r.statusCode != 200)
+  if (r.statusCode != 200) {
     throw Exception('PATCH /todos/$id failed: ${r.body}');
+  }
 }
