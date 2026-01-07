@@ -8,6 +8,8 @@ import 'ui/green_theme.dart';
 import 'widgets/banner_header.dart';
 import 'widgets/bottom_nav.dart';
 
+import 'farmer_supply_page.dart';
+
 class StallsPage extends StatefulWidget {
   const StallsPage({super.key});
 
@@ -27,6 +29,7 @@ class _StallsPageState extends State<StallsPage> {
     const _ProduceDemand(
       title: 'Green Ice Lettuce',
       asset: 'assets/green_ice.jpg',
+      pricePerKg: 50,
       stalls: [
         _StallDemand('Stall A', 25),
         _StallDemand('Stall B', 36),
@@ -36,6 +39,7 @@ class _StallsPageState extends State<StallsPage> {
     const _ProduceDemand(
       title: 'Iceberg Lettuce',
       asset: 'assets/iceberg.jpg',
+      pricePerKg: 40,
       stalls: [
         _StallDemand('Stall A', 66),
         _StallDemand('Stall B', 65),
@@ -45,6 +49,7 @@ class _StallsPageState extends State<StallsPage> {
     const _ProduceDemand(
       title: 'Romaine Lettuce',
       asset: 'assets/romaine.jpg',
+      pricePerKg: 30,
       stalls: [
         _StallDemand('Stall A', 43),
         _StallDemand('Stall B', 30),
@@ -201,10 +206,13 @@ class _ProduceDemand {
   const _ProduceDemand({
     required this.title,
     required this.asset,
+    required this.pricePerKg,
     required this.stalls,
   });
+
   final String title;
   final String asset;
+  final double pricePerKg;
   final List<_StallDemand> stalls;
 }
 
@@ -266,31 +274,48 @@ class _DemandSection extends StatelessWidget {
                   for (final s in data.stalls)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: Container(
-                        height: 40,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: chipBg,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(
-                                (0.05 * 255).round(),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => FarmerSupplyPage(
+                                produceName: data.title,
+                                stallName: s.stall,
+                                currentDemandKg: s.kg,
+                                unitPricePerKg: data.pricePerKg,
+                                assetPath: data.asset,
                               ),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
                             ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            '${s.stall}: ${s.kg}kg',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.2,
-                              fontSize: 14,
+                          );
+                        },
+                        child: Container(
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: chipBg,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(
+                                  (0.05 * 255).round(),
+                                ),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              '${s.stall}: ${s.kg}kg',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
