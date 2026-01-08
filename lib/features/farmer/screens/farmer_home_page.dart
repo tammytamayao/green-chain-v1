@@ -90,7 +90,7 @@ class _FarmerHomePageState extends State<FarmerHomePage> {
   void _goHome() {}
   void _goStalls() => Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (_) => const StallsPage()),
+    MaterialPageRoute(builder: (_) => const FarmerStallsPage()),
   );
   void _goAccount() => Navigator.pushReplacement(
     context,

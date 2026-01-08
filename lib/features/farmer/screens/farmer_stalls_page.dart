@@ -9,18 +9,18 @@ import '../../../widgets/bottom_nav.dart';
 import 'farmer_home_page.dart';
 import 'farmer_supply_page.dart';
 
-class StallsPage extends StatefulWidget {
-  const StallsPage({super.key});
+class FarmerStallsPage extends StatefulWidget {
+  const FarmerStallsPage({super.key});
 
   static const primaryGreen = GreenTheme.primary;
   static const softBg = GreenTheme.softBg;
   static const chipBg = Color(0xFF4F7652);
 
   @override
-  State<StallsPage> createState() => _StallsPageState();
+  State<FarmerStallsPage> createState() => _FarmerStallsPageState();
 }
 
-class _StallsPageState extends State<StallsPage> {
+class _FarmerStallsPageState extends State<FarmerStallsPage> {
   Map<String, dynamic>? _profile; // null = loading
   String? _error;
 
@@ -117,7 +117,7 @@ class _StallsPageState extends State<StallsPage> {
     final loading = _profile == null;
 
     return Scaffold(
-      backgroundColor: StallsPage.softBg,
+      backgroundColor: FarmerStallsPage.softBg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -128,7 +128,7 @@ class _StallsPageState extends State<StallsPage> {
                 hasScrollBody: false,
                 child: Center(
                   child: CircularProgressIndicator(
-                    color: StallsPage.primaryGreen,
+                    color: FarmerStallsPage.primaryGreen,
                   ),
                 ),
               )
@@ -158,7 +158,7 @@ class _StallsPageState extends State<StallsPage> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: StallsPage.primaryGreen,
+                          color: FarmerStallsPage.primaryGreen,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -229,8 +229,8 @@ class _DemandSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryGreen = StallsPage.primaryGreen;
-    const chipBg = StallsPage.chipBg;
+    const primaryGreen = FarmerStallsPage.primaryGreen;
+    const chipBg = FarmerStallsPage.chipBg;
 
     final titleStyle = const TextStyle(
       color: primaryGreen,

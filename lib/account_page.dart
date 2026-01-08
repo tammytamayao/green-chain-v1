@@ -274,7 +274,7 @@ class _AccountPageState extends State<AccountPage> {
           } else if (type == 'farmer') {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const StallsPage()),
+              MaterialPageRoute(builder: (_) => const FarmerStallsPage()),
             );
           } else if (type == 'disposer') {
             // TODO: replace with a real disposer middle page (e.g. Orders)
