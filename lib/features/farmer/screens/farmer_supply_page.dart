@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../supply_confirmation_page.dart';
+import 'farmer_supply_confirmation_page.dart';
 import '../../../ui/green_theme.dart';
 import '../modals/rejected_bottom_sheet.dart';
 import '../models/cart_state.dart';
