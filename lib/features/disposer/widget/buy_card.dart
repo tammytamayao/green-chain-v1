@@ -133,7 +133,7 @@ class BuyCard extends StatelessWidget {
                     ),
                     decoration: InputDecoration(
                       labelText: 'Request (kg)',
-                      hintText: 'Enter kilograms needed',
+                      hintText: 'Enter kilograms',
                       suffixText: 'kg',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -163,7 +163,7 @@ class BuyCard extends StatelessWidget {
                     elevation: 1.5,
                   ),
                   child: const Text(
-                    'Save request',
+                    'Save',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                 ),
