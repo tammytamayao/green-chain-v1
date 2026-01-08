@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../auth_api.dart';
-import '../../../account_page.dart';
+import '../../../../../auth_api.dart';
+import '../../../../../account_page.dart';
 
-import '../../../ui/green_theme.dart';
-import '../../../widgets/banner_header.dart';
-import '../../../widgets/bottom_nav.dart';
+import '../../../../../ui/green_theme.dart';
+import '../../../../../widgets/banner_header.dart';
+import '../../../../../widgets/bottom_nav.dart';
+import 'disposer_orders_page.dart';
 
 class DisposerHomePage extends StatefulWidget {
   const DisposerHomePage({super.key});
@@ -98,11 +99,10 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
   }
 
   void _goMiddle() {
-    // TODO: navigate to the disposer middle tab page (e.g. Orders page)
-    // Navigator.pushReplacement(
-    //   context,
-    //   MaterialPageRoute(builder: (_) => const DisposerOrdersPage()),
-    // );
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const DisposerOrdersPage()),
+    );
   }
 
   void _goAccount() => Navigator.pushReplacement(
