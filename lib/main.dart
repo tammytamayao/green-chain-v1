@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'auth_api.dart';
-import 'disposer_home_page.dart';
+import 'features/disposer/disposer_home_page.dart';
 import 'login_page.dart';
 import 'features/farmer/screens/farmer_home_page.dart';
-import 'driver_home.dart';
+import 'features/driver/driver_home.dart';
 
 void main() => runApp(const MyApp());
 

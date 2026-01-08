@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:green_chain_v1/driver_home.dart';
+import 'package:green_chain_v1/features/driver/driver_home.dart';
 import 'auth_api.dart';
-import 'disposer_home_page.dart';
+import 'features/disposer/disposer_home_page.dart';
 import 'features/farmer/screens/farmer_home_page.dart';
 import 'register_page.dart';
 

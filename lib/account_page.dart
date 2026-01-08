@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'auth_api.dart';
-import 'disposer_home_page.dart';
+import 'features/disposer/disposer_home_page.dart';
+import 'features/disposer/disposer_orders_page.dart';
 import 'features/farmer/screens/farmer_home_page.dart';
 import 'features/farmer/screens/farmer_stalls_page.dart';
 import 'login_page.dart';
-import 'driver_home.dart';
-import 'driver_drive_page.dart';
+import 'features/driver/driver_home.dart';
+import 'features/driver/driver_drive_page.dart';
 
 // Shared UI
 import 'ui/green_theme.dart';
@@ -277,10 +278,9 @@ class _AccountPageState extends State<AccountPage> {
               MaterialPageRoute(builder: (_) => const FarmerStallsPage()),
             );
           } else if (type == 'disposer') {
-            // TODO: replace with a real disposer middle page (e.g. Orders)
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const DisposerHomePage()),
+              MaterialPageRoute(builder: (_) => const DisposerOrdersPage()),
             );
           }
         },
