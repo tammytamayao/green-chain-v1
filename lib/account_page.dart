@@ -24,7 +24,7 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  Map<String, dynamic>? _profile; // null = loading
+  Map<String, dynamic>? _profile;
   String? _error;
 
   @override
@@ -107,12 +107,16 @@ class _AccountPageState extends State<AccountPage> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                       child: Text(
                         _error!,
-                        style: const TextStyle(color: Colors.red),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
 
-                // Profile summary card
+                // Profile summary
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -131,9 +135,7 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                 ),
 
-                // Role-specific cards
                 if (type == 'farmer') ...[
-                  // Farm details
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -145,7 +147,7 @@ class _AccountPageState extends State<AccountPage> {
                             (_profile?['farm_name'] ?? '—') as String,
                           ),
                           _row(
-                            'Farm location',
+                            'Location',
                             (_profile?['farm_location'] ?? '—') as String,
                           ),
                         ],
@@ -153,7 +155,6 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                   ),
                 ] else if (type == 'disposer') ...[
-                  // Business details
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -173,7 +174,6 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                   ),
                 ] else if (type == 'driver') ...[
-                  // Driver + vehicles
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -207,12 +207,15 @@ class _AccountPageState extends State<AccountPage> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _logout,
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Logout'),
+                        icon: const Icon(Icons.logout, size: 26),
+                        label: const Text(
+                          'Logout',
+                          style: TextStyle(fontSize: 18),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AccountPage.primaryGreen,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -229,7 +232,6 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
 
-      // Dynamic bottom navigation
       bottomNavigationBar: BottomNav(
         role: _roleFrom(type),
         current: AppTab.account,
@@ -245,7 +247,6 @@ class _AccountPageState extends State<AccountPage> {
               MaterialPageRoute(builder: (_) => const DisposerHomePage()),
             );
           } else {
-            // farmer
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const FarmerHomePage()),
@@ -259,9 +260,7 @@ class _AccountPageState extends State<AccountPage> {
               MaterialPageRoute(
                 builder: (_) => DriverDrivePage(
                   currentLocation:
-                      (_profile?['current_location'] ??
-                              'Abatan, Buguias, Benguet')
-                          as String,
+                      (_profile?['current_location'] ?? 'Benguet') as String,
                   selectedVehicle:
                       (_profile?['vehicles'] is List &&
                           (_profile!['vehicles'] as List).isNotEmpty)
@@ -277,19 +276,19 @@ class _AccountPageState extends State<AccountPage> {
               context,
               MaterialPageRoute(builder: (_) => const FarmerStallsPage()),
             );
-          } else if (type == 'disposer') {
+          } else {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const DisposerOrdersPage()),
             );
           }
         },
-        onAccount: () {}, // already here
+        onAccount: () {},
       ),
     );
   }
 
-  /* ---------- helper UI ---------- */
+  /* ---------- UI Helpers ---------- */
 
   static Widget _row(String label, String value) {
     return Padding(
@@ -300,9 +299,10 @@ class _AccountPageState extends State<AccountPage> {
             flex: 4,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w600,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -311,7 +311,7 @@ class _AccountPageState extends State<AccountPage> {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -320,8 +320,12 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   static List<Widget> _vehicleRows(dynamic vehiclesJson) {
-    if (vehiclesJson is! List) return [const Text('—')];
-    if (vehiclesJson.isEmpty) return [const Text('—')];
+    if (vehiclesJson is! List) {
+      return [const Text('—', style: TextStyle(fontSize: 16))];
+    }
+    if (vehiclesJson.isEmpty) {
+      return [const Text('—', style: TextStyle(fontSize: 16))];
+    }
 
     return vehiclesJson.map<Widget>((v) {
       final model = (v['model'] ?? '—').toString();
@@ -334,12 +338,21 @@ class _AccountPageState extends State<AccountPage> {
             Expanded(
               child: Text(
                 model,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-            Text('Class $klass', style: TextStyle(color: Colors.grey.shade700)),
+            Text(
+              'Class $klass',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+            ),
             const SizedBox(width: 8),
-            Text('• $plate', style: TextStyle(color: Colors.grey.shade700)),
+            Text(
+              '• $plate',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+            ),
           ],
         ),
       );
@@ -350,8 +363,6 @@ class _AccountPageState extends State<AccountPage> {
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 }
 
-/* ---------- reusable info card ---------- */
-
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.title, required this.children});
 
@@ -361,16 +372,16 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF5E8C61).withAlpha((0.15 * 255).round()),
+          color: const Color(0xFF5E8C61).withAlpha((0.20 * 255).round()),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha((0.03 * 255).round()),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -382,11 +393,12 @@ class _InfoCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
+              fontSize: 18,
               color: AccountPage.primaryGreen,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           ...children,
         ],
       ),
