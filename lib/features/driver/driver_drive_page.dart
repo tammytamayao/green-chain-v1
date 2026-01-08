@@ -3,13 +3,13 @@ import 'dart:math'; // <-- keep this
 import 'package:flutter/material.dart';
 
 // Shared UI
-import 'ui/green_theme.dart';
-import 'widgets/banner_header.dart';
-import 'widgets/bottom_nav.dart';
+import '../../ui/green_theme.dart';
+import '../../widgets/banner_header.dart';
+import '../../widgets/bottom_nav.dart';
 
 // Pages
 import 'driver_home.dart';
-import 'account_page.dart';
+import '../../account_page.dart';
 import 'driver_driving_page.dart'; // <-- use the extracted driving screen
 
 class DriverDrivePage extends StatefulWidget {

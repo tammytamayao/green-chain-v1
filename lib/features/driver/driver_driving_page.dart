@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 // Shared UI
-import 'ui/green_theme.dart';
-import 'widgets/banner_header.dart';
-import 'widgets/bottom_nav.dart';
+import '../../ui/green_theme.dart';
+import '../../widgets/banner_header.dart';
+import '../../widgets/bottom_nav.dart';
 
 // Pages
 import 'driver_home.dart';
-import 'account_page.dart';
+import '../../account_page.dart';
 
 /// Public models used when driving
 class PickupInfo {
