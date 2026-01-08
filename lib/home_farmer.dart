@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'auth_api.dart';
-import 'stalls_page.dart';
+import 'features/farmer/screens/stalls_page.dart';
 import 'account_page.dart';
 
 // Adjust paths as needed:
