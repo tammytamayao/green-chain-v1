@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'auth_api.dart';
-import 'features/farmer/screens/stalls_page.dart';
-import 'account_page.dart';
+import '../../../auth_api.dart';
+import 'farmer_stalls_page.dart';
+import '../../../account_page.dart';
 
-// Adjust paths as needed:
-import 'ui/green_theme.dart';
-import 'widgets/banner_header.dart';
-import 'widgets/bottom_nav.dart';
+import '../../../ui/green_theme.dart';
+import '../../../widgets/banner_header.dart';
+import '../../../widgets/bottom_nav.dart';
 
 class FarmerHomePage extends StatefulWidget {
   const FarmerHomePage({super.key});
