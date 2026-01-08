@@ -30,7 +30,7 @@ class BottomNav extends StatelessWidget {
       case UserRole.driver:
         return (Icons.directions_car_filled_rounded, 'Drive');
       case UserRole.disposer:
-        return (Icons.recycling_outlined, 'Disposals');
+        return (Icons.shopping_cart_outlined, 'Disposals');
       case UserRole.farmer:
         return (Icons.inventory_2_rounded, 'Stalls');
     }
