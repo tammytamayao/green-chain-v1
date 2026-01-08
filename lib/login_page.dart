@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:green_chain_v1/driver_home.dart';
 import 'auth_api.dart';
+import 'features/farmer/screens/farmer_home_page.dart';
 import 'register_page.dart';
-import 'home_farmer.dart'; // <-- for farmer landing
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, required this.onAuthed});

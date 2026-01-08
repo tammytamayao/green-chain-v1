@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_api.dart';
 import 'login_page.dart';
-import 'home_farmer.dart';
+import 'features/farmer/screens/farmer_home_page.dart';
 import 'driver_home.dart'; // <--- add this
 
 void main() => runApp(const MyApp());
@@ -43,6 +43,9 @@ class _MyAppState extends State<MyApp> {
           final type = (profile['type'] as String?) ?? '';
           if (type == 'farmer') {
             return const FarmerHomePage();
+          }
+          if (type == 'driver') {
+            return const DriverHomePage();
           }
           if (type == 'driver') {
             return const DriverHomePage();
