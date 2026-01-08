@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:green_chain_v1/driver_home.dart';
 import 'auth_api.dart';
+import 'disposer_home_page.dart';
 import 'features/farmer/screens/farmer_home_page.dart';
 import 'register_page.dart';
 
@@ -26,7 +27,6 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await loginUser(_username.text.trim(), _password.text);
 
-      // Verify immediately and branch by role
       final profile = await me();
       if (profile == null) {
         throw Exception('Could not verify session. Please try again.');
@@ -38,14 +38,22 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => type == 'farmer'
-              ? const FarmerHomePage()
-              : const DriverHomePage(), // placeholder for other roles
+          builder: (_) {
+            switch (type) {
+              case 'farmer':
+                return const FarmerHomePage();
+              case 'driver':
+                return const DriverHomePage();
+              case 'disposer':
+                return const DisposerHomePage();
+              default:
+                return const DriverHomePage();
+            }
+          },
         ),
       );
 
-      // Optional: also notify MyApp to refresh its FutureBuilder if you keep it
-      // widget.onAuthed();
+      // widget.onAuthed(); // optional if you still use the FutureBuilder refresh
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -119,16 +127,24 @@ class _LoginPageState extends State<LoginPage> {
                     MaterialPageRoute(
                       builder: (_) => RegisterPage(
                         onRegistered: () async {
-                          // After successful registration, branch by role too
                           final profile = await me();
                           if (!mounted) return;
                           final type = (profile?['type'] as String?) ?? '';
                           Navigator.pushReplacement(
                             this.context,
                             MaterialPageRoute(
-                              builder: (_) => type == 'farmer'
-                                  ? const FarmerHomePage()
-                                  : const DriverHomePage(),
+                              builder: (_) {
+                                switch (type) {
+                                  case 'farmer':
+                                    return const FarmerHomePage();
+                                  case 'driver':
+                                    return const DriverHomePage();
+                                  case 'disposer':
+                                    return const FarmerHomePage();
+                                  default:
+                                    return const DriverHomePage();
+                                }
+                              },
                             ),
                           );
                         },

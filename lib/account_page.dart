@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'auth_api.dart';
+import 'disposer_home_page.dart';
 import 'features/farmer/screens/farmer_home_page.dart';
 import 'features/farmer/screens/farmer_stalls_page.dart';
 import 'login_page.dart';
@@ -237,7 +238,13 @@ class _AccountPageState extends State<AccountPage> {
               context,
               MaterialPageRoute(builder: (_) => const DriverHomePage()),
             );
+          } else if (type == 'disposer') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const DisposerHomePage()),
+            );
           } else {
+            // farmer
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const FarmerHomePage()),
@@ -264,10 +271,16 @@ class _AccountPageState extends State<AccountPage> {
                 ),
               ),
             );
-          } else {
+          } else if (type == 'farmer') {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const StallsPage()),
+            );
+          } else if (type == 'disposer') {
+            // TODO: replace with a real disposer middle page (e.g. Orders)
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const DisposerHomePage()),
             );
           }
         },
