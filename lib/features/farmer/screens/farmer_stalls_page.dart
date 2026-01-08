@@ -235,7 +235,7 @@ class _DemandSection extends StatelessWidget {
     final titleStyle = const TextStyle(
       color: primaryGreen,
       fontWeight: FontWeight.w700,
-      fontSize: 16,
+      fontSize: 20,
       letterSpacing: 0.2,
     );
 
@@ -313,7 +313,7 @@ class _DemandSection extends StatelessWidget {
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.2,
-                                fontSize: 14,
+                                fontSize: 18,
                               ),
                             ),
                           ),

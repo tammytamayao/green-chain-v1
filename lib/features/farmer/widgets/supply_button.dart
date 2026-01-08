@@ -26,7 +26,7 @@ class SupplyButton extends StatelessWidget {
         ),
         onPressed: enabled ? onPressed : null,
         child: Text(
-          enabled ? 'Supply' : 'No demand',
+          enabled ? 'Submit' : 'No demand',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
