@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'ui/green_theme.dart';
-import 'widgets/banner_header.dart';
+import '../../../ui/green_theme.dart';
+import '../../../widgets/banner_header.dart';
 
 class SupplyConfirmationPage extends StatelessWidget {
   const SupplyConfirmationPage({
