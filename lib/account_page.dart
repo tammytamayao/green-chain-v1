@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_api.dart';
 import 'home_farmer.dart';
-import 'stalls_page.dart';
+import 'features/farmer/screens/stalls_page.dart';
 import 'login_page.dart';
 import 'driver_home.dart';
 import 'driver_drive_page.dart';
