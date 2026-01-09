@@ -21,7 +21,13 @@ class _RegisterPageState extends State<RegisterPage> {
   final _confirm = TextEditingController();
 
   // type
-  final List<String> _types = const ['farmer', 'disposer', 'driver'];
+  final List<String> _types = const [
+    'farmer',
+    'disposer',
+    'driver',
+    'admin',
+    'consumer',
+  ];
   String? _type;
 
   // farmer fields
@@ -35,6 +41,13 @@ class _RegisterPageState extends State<RegisterPage> {
   // driver fields
   final _licenseId = TextEditingController();
 
+  // admin fields
+  final _email = TextEditingController();
+  final _organization = TextEditingController();
+
+  // consumer fields
+  final _address = TextEditingController();
+
   // driver vehicles (dynamic)
   final List<_VehicleFields> _vehicles = [];
 
@@ -44,7 +57,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    _type = _types.first; // default selection
+    _type = _types.first; // default selection (farmer)
   }
 
   @override
@@ -63,6 +76,11 @@ class _RegisterPageState extends State<RegisterPage> {
     _location.dispose();
 
     _licenseId.dispose();
+
+    _email.dispose();
+    _organization.dispose();
+
+    _address.dispose();
 
     for (final v in _vehicles) {
       v.dispose();
@@ -106,6 +124,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     // type-specific validation
     String? farmName, farmLocation, business, location, licenseId;
+    String? email, organization, address;
     List<Map<String, String>> vehicles = [];
 
     if (t == 'farmer') {
@@ -149,6 +168,21 @@ class _RegisterPageState extends State<RegisterPage> {
         }
         vehicles.add({'model': model, 'class': klass, 'plate_number': plate});
       }
+    } else if (t == 'admin') {
+      email = _email.text.trim();
+      organization = _organization.text.trim();
+      if (email.isEmpty || organization.isEmpty) {
+        setState(
+          () => _error = 'Email and organization are required for admins',
+        );
+        return;
+      }
+    } else if (t == 'consumer') {
+      address = _address.text.trim();
+      if (address.isEmpty) {
+        setState(() => _error = 'Address is required for consumers');
+        return;
+      }
     }
 
     setState(() {
@@ -172,13 +206,18 @@ class _RegisterPageState extends State<RegisterPage> {
         // driver
         licenseId: licenseId,
         vehicles: vehicles,
+        // admin
+        email: email,
+        organization: organization,
+        // consumer
+        address: address,
       );
       widget.onRegistered(); // token saved -> authenticated
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
-      setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -350,6 +389,22 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                 ),
+              ] else if (_type == 'admin') ...[
+                TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: dec('Email', Icons.email_outlined),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _organization,
+                  decoration: dec('Organization', Icons.apartment_outlined),
+                ),
+              ] else if (_type == 'consumer') ...[
+                TextField(
+                  controller: _address,
+                  decoration: dec('Address', Icons.home_outlined),
+                ),
               ],
 
               const SizedBox(height: 24),
@@ -372,8 +427,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         icon: const Icon(Icons.person_add),
                         label: const Text('Register'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              GreenTheme.primary, // <-- standout button
+                          backgroundColor: GreenTheme.primary,
                           foregroundColor: Colors.white,
                           elevation: 2,
                           padding: const EdgeInsets.symmetric(vertical: 14),

@@ -8,6 +8,12 @@ import 'login_page.dart';
 import 'features/driver/driver_home.dart';
 import 'features/driver/driver_drive_page.dart';
 
+// NEW imports
+import 'features/admin/admin_home_page.dart';
+import 'features/admin/admin_monitoring_page.dart';
+import 'features/consumer/consumer_home_page.dart';
+import 'features/consumer/consumer_orders_page.dart';
+
 // Shared UI
 import 'ui/green_theme.dart';
 import 'widgets/banner_header.dart';
@@ -66,6 +72,7 @@ class _AccountPageState extends State<AccountPage> {
         return UserRole.driver;
       case 'disposer':
         return UserRole.disposer;
+      // admin & consumer reuse farmer-style bottom nav visuals
       default:
         return UserRole.farmer;
     }
@@ -162,8 +169,8 @@ class _AccountPageState extends State<AccountPage> {
                         title: 'Business details',
                         children: [
                           _row(
-                            'Entity',
-                            (_profile?['entity'] ?? '—') as String,
+                            'Location',
+                            (_profile?['location'] ?? '—') as String,
                           ),
                           _row(
                             'Business',
@@ -194,6 +201,37 @@ class _AccountPageState extends State<AccountPage> {
                       child: _InfoCard(
                         title: 'Vehicles',
                         children: _vehicleRows(_profile?['vehicles']),
+                      ),
+                    ),
+                  ),
+                ] else if (type == 'admin') ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: _InfoCard(
+                        title: 'Admin details',
+                        children: [
+                          _row('Email', (_profile?['email'] ?? '—') as String),
+                          _row(
+                            'Organization',
+                            (_profile?['organization'] ?? '—') as String,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ] else if (type == 'consumer') ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: _InfoCard(
+                        title: 'Consumer details',
+                        children: [
+                          _row(
+                            'Address',
+                            (_profile?['address'] ?? '—') as String,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -246,6 +284,16 @@ class _AccountPageState extends State<AccountPage> {
               context,
               MaterialPageRoute(builder: (_) => const DisposerHomePage()),
             );
+          } else if (type == 'admin') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminHomePage()),
+            );
+          } else if (type == 'consumer') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const ConsumerHomePage()),
+            );
           } else {
             Navigator.pushReplacement(
               context,
@@ -276,10 +324,25 @@ class _AccountPageState extends State<AccountPage> {
               context,
               MaterialPageRoute(builder: (_) => const FarmerStallsPage()),
             );
-          } else {
+          } else if (type == 'disposer') {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const DisposerOrdersPage()),
+            );
+          } else if (type == 'admin') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminMonitoringPage()),
+            );
+          } else if (type == 'consumer') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const ConsumerOrdersPage()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const FarmerHomePage()),
             );
           }
         },

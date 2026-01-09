@@ -26,7 +26,8 @@ Future<void> registerUser({
   required String contactNumber,
   required String username,
   required String password,
-  required String type, // "farmer" | "disposer" | "driver"
+  required String
+  type, // "farmer" | "disposer" | "driver" | "admin" | "consumer"
   // farmer
   String? farmName,
   String? farmLocation,
@@ -38,6 +39,13 @@ Future<void> registerUser({
   // driver
   String? licenseId,
   List<Map<String, String>> vehicles = const [],
+
+  // admin
+  String? email,
+  String? organization,
+
+  // consumer
+  String? address,
 }) async {
   final payload = <String, dynamic>{
     'first_name': firstName,
@@ -57,6 +65,11 @@ Future<void> registerUser({
   } else if (type == 'driver') {
     payload['license_id'] = licenseId;
     payload['vehicles'] = vehicles;
+  } else if (type == 'admin') {
+    payload['email'] = email;
+    payload['organization'] = organization;
+  } else if (type == 'consumer') {
+    payload['address'] = address;
   }
 
   final r = await http.post(
