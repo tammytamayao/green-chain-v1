@@ -66,7 +66,7 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
   Future<void> _onSupply() async {
     if (!mounted) return;
 
-    final isConfirmed = cart.qtyKg >= 1; // your demo rule
+    final isConfirmed = cart.qtyKg >= 2; // your demo rule
 
     if (!isConfirmed) {
       await showRejectedBottomSheet(
