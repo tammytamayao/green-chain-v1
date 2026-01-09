@@ -29,8 +29,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _farmLocation = TextEditingController();
 
   // disposer fields
-  final _entity = TextEditingController();
   final _business = TextEditingController();
+  final _location = TextEditingController();
 
   // driver fields
   final _licenseId = TextEditingController();
@@ -59,8 +59,8 @@ class _RegisterPageState extends State<RegisterPage> {
     _farmName.dispose();
     _farmLocation.dispose();
 
-    _entity.dispose();
     _business.dispose();
+    _location.dispose();
 
     _licenseId.dispose();
 
@@ -105,7 +105,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     // type-specific validation
-    String? farmName, farmLocation, entity, business, licenseId;
+    String? farmName, farmLocation, business, location, licenseId;
     List<Map<String, String>> vehicles = [];
 
     if (t == 'farmer') {
@@ -118,11 +118,11 @@ class _RegisterPageState extends State<RegisterPage> {
         return;
       }
     } else if (t == 'disposer') {
-      entity = _entity.text.trim();
       business = _business.text.trim();
-      if (entity.isEmpty || business.isEmpty) {
+      location = _location.text.trim();
+      if (business.isEmpty || location.isEmpty) {
         setState(
-          () => _error = 'Entity and business are required for disposers',
+          () => _error = 'Business and location are required for disposers',
         );
         return;
       }
@@ -167,8 +167,8 @@ class _RegisterPageState extends State<RegisterPage> {
         farmName: farmName,
         farmLocation: farmLocation,
         // disposer
-        entity: entity,
         business: business,
+        location: location,
         // driver
         licenseId: licenseId,
         vehicles: vehicles,
@@ -302,13 +302,16 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ] else if (_type == 'disposer') ...[
                 TextField(
-                  controller: _entity,
-                  decoration: dec('Entity', Icons.apartment_outlined),
+                  controller: _business,
+                  decoration: dec(
+                    'Business name',
+                    Icons.business_center_outlined,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  controller: _business,
-                  decoration: dec('Business', Icons.business_center_outlined),
+                  controller: _location,
+                  decoration: dec('Business location', Icons.place_outlined),
                 ),
               ] else if (_type == 'driver') ...[
                 const SizedBox(height: 16),

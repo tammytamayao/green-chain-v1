@@ -140,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
                                   case 'driver':
                                     return const DriverHomePage();
                                   case 'disposer':
-                                    return const FarmerHomePage();
+                                    return const DisposerHomePage();
                                   default:
                                     return const DriverHomePage();
                                 }

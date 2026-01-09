@@ -32,8 +32,8 @@ Future<void> registerUser({
   String? farmLocation,
 
   // disposer
-  String? entity,
   String? business,
+  String? location,
 
   // driver
   String? licenseId,
@@ -52,8 +52,8 @@ Future<void> registerUser({
     payload['farm_name'] = farmName;
     payload['farm_location'] = farmLocation;
   } else if (type == 'disposer') {
-    payload['entity'] = entity;
     payload['business'] = business;
+    payload['location'] = location;
   } else if (type == 'driver') {
     payload['license_id'] = licenseId;
     payload['vehicles'] = vehicles;
@@ -93,39 +93,4 @@ Future<Map<String, dynamic>?> me() async {
   );
   if (r.statusCode != 200) return null;
   return jsonDecode(r.body) as Map<String, dynamic>;
-}
-
-// (unchanged) authorized helpers
-Future<List<Map<String, dynamic>>> fetchTodos() async {
-  final token = await getToken();
-  final r = await http.get(
-    _u('/todos'),
-    headers: {'Authorization': 'Bearer $token'},
-  );
-  if (r.statusCode != 200) throw Exception('GET /todos failed: ${r.body}');
-  return (jsonDecode(r.body) as List).cast<Map<String, dynamic>>();
-}
-
-Future<void> addTodo(String title) async {
-  final token = await getToken();
-  final r = await http.post(
-    _u('/todos'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({'title': title}),
-  );
-  if (r.statusCode != 201) throw Exception('POST /todos failed: ${r.body}');
-}
-
-Future<void> toggleTodo(int id) async {
-  final token = await getToken();
-  final r = await http.patch(
-    _u('/todos/$id'),
-    headers: {'Authorization': 'Bearer $token'},
-  );
-  if (r.statusCode != 200) {
-    throw Exception('PATCH /todos/$id failed: ${r.body}');
-  }
 }
