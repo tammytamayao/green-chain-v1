@@ -18,7 +18,8 @@ class BannerHeaderSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logoHeight = height * 0.65; // slightly smaller — about 42px if height=64
+    final logoHeight =
+        height * 0.65; // slightly smaller — about 42px if height=64
 
     return SliverToBoxAdapter(
       child: Padding(

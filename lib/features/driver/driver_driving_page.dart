@@ -50,18 +50,18 @@ class DriverDrivingPage extends StatelessWidget {
   final List<PickupInfo> pickups;
   final List<DeliveryInfo> deliveries;
 
-  String _vehicleLabel(Map<String, dynamic>? v) {
-    if (v == null) return 'No vehicle selected';
-    final model = (v['model'] ?? '').toString();
-    final klass = (v['class'] ?? '').toString();
-    final plate = (v['plate_number'] ?? '').toString();
-    final parts = [
-      model,
-      klass.isEmpty ? null : '($klass)',
-      plate.isEmpty ? null : plate,
-    ].whereType<String>().toList();
-    return parts.isEmpty ? 'Vehicle' : parts.join(' • ');
-  }
+  // String _vehicleLabel(Map<String, dynamic>? v) {
+  //   if (v == null) return 'No vehicle selected';
+  //   final model = (v['model'] ?? '').toString();
+  //   final klass = (v['class'] ?? '').toString();
+  //   final plate = (v['plate_number'] ?? '').toString();
+  //   final parts = [
+  //     model,
+  //     klass.isEmpty ? null : '($klass)',
+  //     plate.isEmpty ? null : plate,
+  //   ].whereType<String>().toList();
+  //   return parts.isEmpty ? 'Vehicle' : parts.join(' • ');
+  // }
 
   @override
   Widget build(BuildContext context) {
