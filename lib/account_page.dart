@@ -147,7 +147,7 @@ class _AccountPageState extends State<AccountPage> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: _InfoCard(
-                        title: 'Farm details',
+                        title: 'Farm Details',
                         children: [
                           _row(
                             'Farm name',
@@ -166,7 +166,7 @@ class _AccountPageState extends State<AccountPage> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: _InfoCard(
-                        title: 'Business details',
+                        title: 'Business Details',
                         children: [
                           _row(
                             'Location',
@@ -185,7 +185,7 @@ class _AccountPageState extends State<AccountPage> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: _InfoCard(
-                        title: 'Driver details',
+                        title: 'Driver Details',
                         children: [
                           _row(
                             'License ID',
@@ -209,7 +209,7 @@ class _AccountPageState extends State<AccountPage> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: _InfoCard(
-                        title: 'Admin details',
+                        title: 'Admin Details',
                         children: [
                           _row('Email', (_profile?['email'] ?? '—') as String),
                           _row(
@@ -225,7 +225,7 @@ class _AccountPageState extends State<AccountPage> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: _InfoCard(
-                        title: 'Consumer details',
+                        title: 'Consumer Details',
                         children: [
                           _row(
                             'Address',
