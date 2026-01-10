@@ -110,7 +110,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   onPressed: () => Navigator.of(ctx).pop(null),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: () {
                     final text = controller.text.trim();
                     if (text.isEmpty) {
@@ -173,10 +173,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
               onPressed: () => Navigator.of(ctx).pop(false),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-              ),
+            TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text('Delete'),
             ),
@@ -468,6 +465,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                             label: const Text('Add product'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryGreen,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 12,

@@ -121,3 +121,30 @@ Future<void> deleteProduct(int productId) async {
     throw Exception('Failed to delete product: ${r.body}');
   }
 }
+
+/// Fetch high-level admin metrics from /system/metrics
+/// Shape:
+/// {
+///   "users": { "farmer": int, "disposer": int, "driver": int, "consumer": int },
+///   "requests": int,
+///   "stalls": int,
+///   "orders": int,
+///   "feedbacks": int
+/// }
+Future<Map<String, dynamic>> fetchAdminMetrics() async {
+  final token = await getToken();
+
+  final headers = <String, String>{};
+  if (token != null) {
+    // In case you later secure /system/metrics, this will already send the token.
+    headers['Authorization'] = 'Bearer $token';
+  }
+
+  final r = await http.get(_u('/system/metrics'), headers: headers);
+
+  if (r.statusCode != 200) {
+    throw Exception('Failed to load metrics: ${r.body}');
+  }
+
+  return jsonDecode(r.body) as Map<String, dynamic>;
+}
