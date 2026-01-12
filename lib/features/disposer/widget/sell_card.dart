@@ -120,7 +120,7 @@ class SellCard extends StatelessWidget {
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: const Text('Cancel', style: TextStyle(fontSize: 16)),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: GreenTheme.primary,

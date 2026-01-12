@@ -148,7 +148,7 @@ class BuyCard extends StatelessWidget {
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: GreenTheme.primary,

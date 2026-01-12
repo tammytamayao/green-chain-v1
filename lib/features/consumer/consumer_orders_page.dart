@@ -77,7 +77,7 @@ class ConsumerOrdersPage extends StatelessWidget {
                     // Product dropdown
                     DropdownButtonFormField<int>(
                       decoration: const InputDecoration(labelText: 'Product'),
-                      value: selectedProductId,
+                      initialValue: selectedProductId,
                       items: products.map((p) {
                         final label = '${p['variant']} ${p['name']}';
                         return DropdownMenuItem<int>(
@@ -96,7 +96,7 @@ class ConsumerOrdersPage extends StatelessWidget {
                     // Size dropdown
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Size'),
-                      value: selectedSize,
+                      initialValue: selectedSize,
                       items: sizes.map((s) {
                         return DropdownMenuItem<String>(
                           value: s,
@@ -114,7 +114,7 @@ class ConsumerOrdersPage extends StatelessWidget {
                     // Type dropdown
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Type'),
-                      value: selectedType,
+                      initialValue: selectedType,
                       items: types.map((t) {
                         return DropdownMenuItem<String>(
                           value: t,
@@ -144,7 +144,7 @@ class ConsumerOrdersPage extends StatelessWidget {
                       Navigator.of(ctx).pop<ProductSelection?>(null),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: () {
                     if (selectedProductId == null ||
                         selectedSize == null ||

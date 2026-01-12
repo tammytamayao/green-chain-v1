@@ -261,7 +261,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                       : () => Navigator.of(ctx).pop<Product?>(null),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: saving
                       ? null
                       : () async {
