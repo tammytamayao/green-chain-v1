@@ -66,15 +66,22 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
+  /// Map backend "type" string to BottomNav role visuals.
+  /// We only have farmer/driver/disposer visuals for now,
+  /// so admin + consumer reuse farmer visuals.
   UserRole _roleFrom(String? t) {
     switch (t) {
       case 'driver':
         return UserRole.driver;
       case 'disposer':
         return UserRole.disposer;
-      // admin & consumer reuse farmer-style bottom nav visuals
-      default:
+      case 'farmer':
         return UserRole.farmer;
+      case 'admin':
+      case 'consumer':
+        return UserRole.farmer; // reuse visuals
+      default:
+        return UserRole.farmer; // safe default visuals
     }
   }
 
@@ -383,10 +390,7 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   static List<Widget> _vehicleRows(dynamic vehiclesJson) {
-    if (vehiclesJson is! List) {
-      return [const Text('—', style: TextStyle(fontSize: 16))];
-    }
-    if (vehiclesJson.isEmpty) {
+    if (vehiclesJson is! List || vehiclesJson.isEmpty) {
       return [const Text('—', style: TextStyle(fontSize: 16))];
     }
 
@@ -440,7 +444,9 @@ class _InfoCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF5E8C61).withAlpha((0.20 * 255).round()),
+          color: const Color(
+            0xFF5E8C61,
+          ).withValues(alpha: 0.20), // was withAlpha
         ),
         boxShadow: [
           BoxShadow(

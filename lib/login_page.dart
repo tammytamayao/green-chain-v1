@@ -21,6 +21,24 @@ class _LoginPageState extends State<LoginPage> {
   bool _busy = false;
   String? _error;
 
+  Widget _homeForType(String type) {
+    switch (type) {
+      case 'farmer':
+        return const FarmerHomePage();
+      case 'driver':
+        return const DriverHomePage();
+      case 'disposer':
+        return const DisposerHomePage();
+      case 'admin':
+        return const AdminHomePage();
+      case 'consumer':
+        return const ConsumerHomePage();
+      default:
+        // Neutral / fallback UI if backend sends an unknown role
+        return UnknownRolePage(role: type);
+    }
+  }
+
   Future<void> _doLogin() async {
     setState(() {
       _busy = true;
@@ -39,27 +57,10 @@ class _LoginPageState extends State<LoginPage> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) {
-            switch (type) {
-              case 'farmer':
-                return const FarmerHomePage();
-              case 'driver':
-                return const DriverHomePage();
-              case 'disposer':
-                return const DisposerHomePage();
-              case 'admin':
-                return const AdminHomePage();
-              case 'consumer':
-                return const ConsumerHomePage();
-              default:
-                return const DriverHomePage();
-            }
-          },
-        ),
+        MaterialPageRoute(builder: (_) => _homeForType(type)),
       );
 
-      // widget.onAuthed(); // optional if you still use the FutureBuilder refresh
+      // widget.onAuthed();
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -139,22 +140,7 @@ class _LoginPageState extends State<LoginPage> {
                           Navigator.pushReplacement(
                             this.context,
                             MaterialPageRoute(
-                              builder: (_) {
-                                switch (type) {
-                                  case 'farmer':
-                                    return const FarmerHomePage();
-                                  case 'driver':
-                                    return const DriverHomePage();
-                                  case 'disposer':
-                                    return const DisposerHomePage();
-                                  case 'admin':
-                                    return const AdminHomePage();
-                                  case 'consumer':
-                                    return const ConsumerHomePage();
-                                  default:
-                                    return const DriverHomePage();
-                                }
-                              },
+                              builder: (_) => _homeForType(type),
                             ),
                           );
                         },
@@ -164,6 +150,61 @@ class _LoginPageState extends State<LoginPage> {
                 },
                 icon: const Icon(Icons.person_add_outlined),
                 label: const Text("Create account"),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Neutral fallback UI for unexpected / unknown roles.
+/// This makes more sense than defaulting to Driver UI.
+class UnknownRolePage extends StatelessWidget {
+  const UnknownRolePage({super.key, required this.role});
+
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayRole = role.isEmpty ? 'unknown' : role;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Welcome')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.help_outline, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'You are logged in with role: "$displayRole".',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Please refresh and try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  await clearToken();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LoginPage(onAuthed: () {}),
+                      ),
+                      (_) => false,
+                    );
+                  }
+                },
+                child: const Text('Back to Login'),
               ),
             ],
           ),
