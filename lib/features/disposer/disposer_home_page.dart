@@ -110,6 +110,214 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
     MaterialPageRoute(builder: (_) => const AccountPage()),
   );
 
+  Future<void> _showAddInventoryDialog() async {
+    // Product names only (no organic / non-organic labels here)
+    final productOptions = <String>[
+      'Green Ice Lettuce',
+      'Iceberg Lettuce',
+      'Romaine Lettuce',
+    ];
+
+    final typeOptions = <String>['Organic', 'Non-organic'];
+
+    final sizeOptions = <String>['Big', 'Small'];
+
+    final classController = TextEditingController();
+    final freshnessController = TextEditingController();
+    final stocksController = TextEditingController();
+
+    String? localError;
+    bool saving = false;
+
+    String? selectedProduct;
+    String? selectedType;
+    String? selectedSize;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Add stock inventory'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Product dropdown (name only)
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Product'),
+                      value: selectedProduct,
+                      items: productOptions
+                          .map(
+                            (p) => DropdownMenuItem<String>(
+                              value: p,
+                              child: Text(p),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedProduct = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Type dropdown (Organic / Non-organic)
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Type'),
+                      value: selectedType,
+                      items: typeOptions
+                          .map(
+                            (t) => DropdownMenuItem<String>(
+                              value: t,
+                              child: Text(t),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedType = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Size dropdown (Big / Small)
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Size'),
+                      value: selectedSize,
+                      items: sizeOptions
+                          .map(
+                            (s) => DropdownMenuItem<String>(
+                              value: s,
+                              child: Text(s),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedSize = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Class
+                    TextField(
+                      controller: classController,
+                      decoration: const InputDecoration(
+                        labelText: 'Class',
+                        hintText: 'e.g., A, B, Premium',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Freshness
+                    TextField(
+                      controller: freshnessController,
+                      decoration: const InputDecoration(
+                        labelText: 'Freshness',
+                        hintText: 'e.g., Newly harvested, 1 day old',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Stocks
+                    TextField(
+                      controller: stocksController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Stocks (kg)',
+                      ),
+                    ),
+
+                    if (localError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        localError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving
+                      ? null
+                      : () => Navigator.of(ctx).pop<void>(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          final klass = classController.text.trim();
+                          final freshness = freshnessController.text.trim();
+                          final stocksText = stocksController.text.trim();
+
+                          if (selectedProduct == null ||
+                              selectedType == null ||
+                              selectedSize == null ||
+                              klass.isEmpty ||
+                              freshness.isEmpty ||
+                              stocksText.isEmpty) {
+                            setStateDialog(() {
+                              localError =
+                                  'Please fill in all fields and select product, type and size.';
+                            });
+                            return;
+                          }
+
+                          final stocks = double.tryParse(stocksText);
+                          if (stocks == null || stocks <= 0) {
+                            setStateDialog(() {
+                              localError =
+                                  'Enter a valid positive number for stocks.';
+                            });
+                            return;
+                          }
+
+                          setStateDialog(() {
+                            saving = true;
+                            localError = null;
+                          });
+
+                          // TODO: hook this into your inventory logic / API.
+                          // For now: show confirmation and close.
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Stock added: $selectedProduct '
+                                '($selectedType, $selectedSize, $stocks kg)',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+
+                          if (ctx.mounted) {
+                            Navigator.of(ctx).pop<void>();
+                          }
+                        },
+                  child: Text(saving ? 'Saving...' : 'Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // FAB handler: open the modal dialog
+  void _onAddInventory() {
+    _showAddInventoryDialog();
+  }
+
   @override
   Widget build(BuildContext context) {
     final loading = _profile == null;
@@ -171,25 +379,59 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                   ),
                 ),
 
-                // Inventory list
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  sliver: SliverList.separated(
-                    itemCount: _inventory.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) {
-                      final it = _inventory[i];
-                      return _InventoryCard(
-                        name: it['name'] as String,
-                        price: (it['price'] as num).toDouble(),
-                        unit: it['unit'] as String,
-                        assetPath: it['asset'] as String,
-                        stock: it['stock'] as int,
-                        orders: it['orders'] as int,
-                      );
-                    },
+                // Inventory list OR empty state
+                if (_inventory.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No inventory yet',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap the + button below to add your first stock item.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    sliver: SliverList.separated(
+                      itemCount: _inventory.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final it = _inventory[i];
+                        return _InventoryCard(
+                          name: it['name'] as String,
+                          price: (it['price'] as num).toDouble(),
+                          unit: it['unit'] as String,
+                          assetPath: it['asset'] as String,
+                          stock: it['stock'] as int,
+                          orders: it['orders'] as int,
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             ],
           ),
@@ -202,6 +444,12 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
         onMiddle: _goMiddle,
         onAccount: _goAccount,
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _onAddInventory,
+        backgroundColor: primaryGreen,
+        child: const Icon(Icons.add),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -333,7 +581,7 @@ class _StatPill extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 14, // bigger
+              fontSize: 14,
               fontWeight: FontWeight.w900,
               color: Colors.grey.shade900,
             ),

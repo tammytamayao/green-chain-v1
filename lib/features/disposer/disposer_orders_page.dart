@@ -27,126 +27,126 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
   // Mock data — you can later wire to backend
   final List<MarketItem> _marketItems = const [
-    MarketItem(
-      name: 'Green Ice Lettuce',
-      price: 48.00,
-      unit: '/kg',
-      assetPath: 'assets/green_ice.jpg',
-      available: 200,
-    ),
-    MarketItem(
-      name: 'Iceberg Lettuce',
-      price: 38.00,
-      unit: '/kg',
-      assetPath: 'assets/iceberg.jpg',
-      available: 160,
-    ),
-    MarketItem(
-      name: 'Romaine Lettuce',
-      price: 32.00,
-      unit: '/kg',
-      assetPath: 'assets/romaine.jpg',
-      available: 120,
-    ),
+    // MarketItem(
+    //   name: 'Green Ice Lettuce',
+    //   price: 48.00,
+    //   unit: '/kg',
+    //   assetPath: 'assets/green_ice.jpg',
+    //   available: 200,
+    // ),
+    // MarketItem(
+    //   name: 'Iceberg Lettuce',
+    //   price: 38.00,
+    //   unit: '/kg',
+    //   assetPath: 'assets/iceberg.jpg',
+    //   available: 160,
+    // ),
+    // MarketItem(
+    //   name: 'Romaine Lettuce',
+    //   price: 32.00,
+    //   unit: '/kg',
+    //   assetPath: 'assets/romaine.jpg',
+    //   available: 120,
+    // ),
   ];
 
   // Not const so we can update variant prices
   final List<SellLot> _sellLots = [
-    const SellLot(
-      name: 'Green Ice Lettuce',
-      unit: '/kg',
-      assetPath: 'assets/green_ice.jpg',
-      status: 'Open',
-      variants: [
-        VariantPrice(
-          id: 1,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.organic,
-          price: 55.0,
-          stockKg: 20.0,
-        ),
-        VariantPrice(
-          id: 2,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 48.0,
-          stockKg: 40.0,
-        ),
-        VariantPrice(
-          id: 3,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.organic,
-          price: 62.0,
-          stockKg: 10.0,
-        ),
-        VariantPrice(
-          id: 4,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 52.0,
-          stockKg: 30.0,
-        ),
-      ],
-    ),
-    const SellLot(
-      name: 'Iceberg Lettuce',
-      unit: '/kg',
-      assetPath: 'assets/iceberg.jpg',
-      status: 'Partially filled',
-      variants: [
-        VariantPrice(
-          id: 5,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.organic,
-          price: 45.0,
-          stockKg: 15.0,
-        ),
-        VariantPrice(
-          id: 6,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 40.0,
-          stockKg: 25.0,
-        ),
-      ],
-    ),
-    // NEW: Romaine Lettuce sell lot
-    const SellLot(
-      name: 'Romaine Lettuce',
-      unit: '/kg',
-      assetPath: 'assets/romaine.jpg',
-      status: 'Open',
-      variants: [
-        VariantPrice(
-          id: 7,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.organic,
-          price: 50.0,
-          stockKg: 18.0,
-        ),
-        VariantPrice(
-          id: 8,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 42.0,
-          stockKg: 22.0,
-        ),
-        VariantPrice(
-          id: 9,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.organic,
-          price: 58.0,
-          stockKg: 12.0,
-        ),
-        VariantPrice(
-          id: 10,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 48.0,
-          stockKg: 28.0,
-        ),
-      ],
-    ),
+    // const SellLot(
+    //   name: 'Green Ice Lettuce',
+    //   unit: '/kg',
+    //   assetPath: 'assets/green_ice.jpg',
+    //   status: 'Open',
+    //   variants: [
+    //     VariantPrice(
+    //       id: 1,
+    //       size: LettuceSize.small,
+    //       variantType: LettuceVariantType.organic,
+    //       price: 55.0,
+    //       stockKg: 20.0,
+    //     ),
+    //     VariantPrice(
+    //       id: 2,
+    //       size: LettuceSize.small,
+    //       variantType: LettuceVariantType.nonOrganic,
+    //       price: 48.0,
+    //       stockKg: 40.0,
+    //     ),
+    //     VariantPrice(
+    //       id: 3,
+    //       size: LettuceSize.big,
+    //       variantType: LettuceVariantType.organic,
+    //       price: 62.0,
+    //       stockKg: 10.0,
+    //     ),
+    //     VariantPrice(
+    //       id: 4,
+    //       size: LettuceSize.big,
+    //       variantType: LettuceVariantType.nonOrganic,
+    //       price: 52.0,
+    //       stockKg: 30.0,
+    //     ),
+    //   ],
+    // ),
+    // const SellLot(
+    //   name: 'Iceberg Lettuce',
+    //   unit: '/kg',
+    //   assetPath: 'assets/iceberg.jpg',
+    //   status: 'Partially filled',
+    //   variants: [
+    //     VariantPrice(
+    //       id: 5,
+    //       size: LettuceSize.small,
+    //       variantType: LettuceVariantType.organic,
+    //       price: 45.0,
+    //       stockKg: 15.0,
+    //     ),
+    //     VariantPrice(
+    //       id: 6,
+    //       size: LettuceSize.big,
+    //       variantType: LettuceVariantType.nonOrganic,
+    //       price: 40.0,
+    //       stockKg: 25.0,
+    //     ),
+    //   ],
+    // ),
+    // // NEW: Romaine Lettuce sell lot
+    // const SellLot(
+    //   name: 'Romaine Lettuce',
+    //   unit: '/kg',
+    //   assetPath: 'assets/romaine.jpg',
+    //   status: 'Open',
+    //   variants: [
+    //     VariantPrice(
+    //       id: 7,
+    //       size: LettuceSize.small,
+    //       variantType: LettuceVariantType.organic,
+    //       price: 50.0,
+    //       stockKg: 18.0,
+    //     ),
+    //     VariantPrice(
+    //       id: 8,
+    //       size: LettuceSize.small,
+    //       variantType: LettuceVariantType.nonOrganic,
+    //       price: 42.0,
+    //       stockKg: 22.0,
+    //     ),
+    //     VariantPrice(
+    //       id: 9,
+    //       size: LettuceSize.big,
+    //       variantType: LettuceVariantType.organic,
+    //       price: 58.0,
+    //       stockKg: 12.0,
+    //     ),
+    //     VariantPrice(
+    //       id: 10,
+    //       size: LettuceSize.big,
+    //       variantType: LettuceVariantType.nonOrganic,
+    //       price: 48.0,
+    //       stockKg: 28.0,
+    //     ),
+    //   ],
+    // ),
   ];
 
   // Saved buy requests per item (by name)
@@ -214,6 +214,50 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
     MaterialPageRoute(builder: (_) => const AccountPage()),
   );
 
+  // Reusable empty-state widget builder
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String message,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 64, color: Colors.grey.shade500),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _goHome,
+            icon: const Icon(Icons.storefront),
+            label: const Text('Go to Inventory'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loading = _profile == null;
@@ -254,82 +298,104 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                   onTabChanged: (idx) => setState(() => _tabIndex = idx),
                 ),
 
+                // Content based on tab + whether there is data
                 if (_tabIndex == 0)
-                  BuyTabSliver(
-                    items: _marketItems,
-                    buyRequests: _buyRequests,
-                    onSaveRequest: (name, value) {
-                      setState(() {
-                        _buyRequests[name] = value;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Saved request: ${value.toStringAsFixed(2)} kg of $name',
+                  (_marketItems.isEmpty
+                      ? SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _buildEmptyState(
+                            icon: Icons.shopping_basket_outlined,
+                            title: 'No products can be requested yet',
+                            message:
+                                'Add items to inventory to buy products from farmers.',
                           ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                  )
+                        )
+                      : BuyTabSliver(
+                          items: _marketItems,
+                          buyRequests: _buyRequests,
+                          onSaveRequest: (name, value) {
+                            setState(() {
+                              _buyRequests[name] = value;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Saved request: ${value.toStringAsFixed(2)} kg of $name',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ))
                 else
-                  SellTabSliver(
-                    items: _sellLots,
-                    onUpdateVariantPrice: (lot, variant, newPrice) {
-                      setState(() {
-                        final lotIndex = _sellLots.indexOf(lot);
-                        if (lotIndex == -1) return;
-
-                        final currentLot = _sellLots[lotIndex];
-
-                        // Update by (size, variantType) so we can handle missing combos
-                        final existingIndex = currentLot.variants.indexWhere(
-                          (v) =>
-                              v.size == variant.size &&
-                              v.variantType == variant.variantType,
-                        );
-
-                        List<VariantPrice> updatedVariants =
-                            List<VariantPrice>.from(currentLot.variants);
-
-                        if (existingIndex >= 0) {
-                          updatedVariants[existingIndex] =
-                              updatedVariants[existingIndex].copyWith(
-                                price: newPrice,
-                              );
-                        } else {
-                          final newId = currentLot.variants.isEmpty
-                              ? 1
-                              : currentLot.variants.last.id + 1;
-
-                          updatedVariants.add(
-                            VariantPrice(
-                              id: newId,
-                              size: variant.size,
-                              variantType: variant.variantType,
-                              price: newPrice,
-                              stockKg: 0.0,
-                            ),
-                          );
-                        }
-
-                        _sellLots[lotIndex] = currentLot.copyWith(
-                          variants: updatedVariants,
-                        );
-                      });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Updated ${lot.name} '
-                            '(${variant.size.label}, ${variant.variantType.label}) '
-                            'to ₱${newPrice.toStringAsFixed(2)} ${lot.unit}',
+                  (_sellLots.isEmpty
+                      ? SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _buildEmptyState(
+                            icon: Icons.receipt_long_outlined,
+                            title: 'Nothing to sell yet',
+                            message:
+                                'Add products/stocks from your inventory so buyers can see your offers.',
                           ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                  ),
+                        )
+                      : SellTabSliver(
+                          items: _sellLots,
+                          onUpdateVariantPrice: (lot, variant, newPrice) {
+                            setState(() {
+                              final lotIndex = _sellLots.indexOf(lot);
+                              if (lotIndex == -1) return;
+
+                              final currentLot = _sellLots[lotIndex];
+
+                              // Update by (size, variantType) so we can handle missing combos
+                              final existingIndex = currentLot.variants
+                                  .indexWhere(
+                                    (v) =>
+                                        v.size == variant.size &&
+                                        v.variantType == variant.variantType,
+                                  );
+
+                              List<VariantPrice> updatedVariants =
+                                  List<VariantPrice>.from(currentLot.variants);
+
+                              if (existingIndex >= 0) {
+                                updatedVariants[existingIndex] =
+                                    updatedVariants[existingIndex].copyWith(
+                                      price: newPrice,
+                                    );
+                              } else {
+                                final newId = currentLot.variants.isEmpty
+                                    ? 1
+                                    : currentLot.variants.last.id + 1;
+
+                                updatedVariants.add(
+                                  VariantPrice(
+                                    id: newId,
+                                    size: variant.size,
+                                    variantType: variant.variantType,
+                                    price: newPrice,
+                                    stockKg: 0.0,
+                                  ),
+                                );
+                              }
+
+                              _sellLots[lotIndex] = currentLot.copyWith(
+                                variants: updatedVariants,
+                              );
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Updated ${lot.name} '
+                                  '(${variant.size.label}, ${variant.variantType.label}) '
+                                  'to ₱${newPrice.toStringAsFixed(2)} ${lot.unit}',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        )),
               ],
             ],
           ),
