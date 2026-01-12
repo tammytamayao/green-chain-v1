@@ -27,126 +27,126 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
   // Mock data — you can later wire to backend
   final List<MarketItem> _marketItems = const [
-    // MarketItem(
-    //   name: 'Green Ice Lettuce',
-    //   price: 48.00,
-    //   unit: '/kg',
-    //   assetPath: 'assets/green_ice.jpg',
-    //   available: 200,
-    // ),
-    // MarketItem(
-    //   name: 'Iceberg Lettuce',
-    //   price: 38.00,
-    //   unit: '/kg',
-    //   assetPath: 'assets/iceberg.jpg',
-    //   available: 160,
-    // ),
-    // MarketItem(
-    //   name: 'Romaine Lettuce',
-    //   price: 32.00,
-    //   unit: '/kg',
-    //   assetPath: 'assets/romaine.jpg',
-    //   available: 120,
-    // ),
+    MarketItem(
+      name: 'Green Ice Lettuce',
+      price: 48.00,
+      unit: '/kg',
+      assetPath: 'assets/green_ice.jpg',
+      available: 200,
+    ),
+    MarketItem(
+      name: 'Iceberg Lettuce',
+      price: 38.00,
+      unit: '/kg',
+      assetPath: 'assets/iceberg.jpg',
+      available: 160,
+    ),
+    MarketItem(
+      name: 'Romaine Lettuce',
+      price: 32.00,
+      unit: '/kg',
+      assetPath: 'assets/romaine.jpg',
+      available: 120,
+    ),
   ];
 
   // Not const so we can update variant prices
   final List<SellLot> _sellLots = [
-    // const SellLot(
-    //   name: 'Green Ice Lettuce',
-    //   unit: '/kg',
-    //   assetPath: 'assets/green_ice.jpg',
-    //   status: 'Open',
-    //   variants: [
-    //     VariantPrice(
-    //       id: 1,
-    //       size: LettuceSize.small,
-    //       variantType: LettuceVariantType.organic,
-    //       price: 55.0,
-    //       stockKg: 20.0,
-    //     ),
-    //     VariantPrice(
-    //       id: 2,
-    //       size: LettuceSize.small,
-    //       variantType: LettuceVariantType.nonOrganic,
-    //       price: 48.0,
-    //       stockKg: 40.0,
-    //     ),
-    //     VariantPrice(
-    //       id: 3,
-    //       size: LettuceSize.big,
-    //       variantType: LettuceVariantType.organic,
-    //       price: 62.0,
-    //       stockKg: 10.0,
-    //     ),
-    //     VariantPrice(
-    //       id: 4,
-    //       size: LettuceSize.big,
-    //       variantType: LettuceVariantType.nonOrganic,
-    //       price: 52.0,
-    //       stockKg: 30.0,
-    //     ),
-    //   ],
-    // ),
-    // const SellLot(
-    //   name: 'Iceberg Lettuce',
-    //   unit: '/kg',
-    //   assetPath: 'assets/iceberg.jpg',
-    //   status: 'Partially filled',
-    //   variants: [
-    //     VariantPrice(
-    //       id: 5,
-    //       size: LettuceSize.small,
-    //       variantType: LettuceVariantType.organic,
-    //       price: 45.0,
-    //       stockKg: 15.0,
-    //     ),
-    //     VariantPrice(
-    //       id: 6,
-    //       size: LettuceSize.big,
-    //       variantType: LettuceVariantType.nonOrganic,
-    //       price: 40.0,
-    //       stockKg: 25.0,
-    //     ),
-    //   ],
-    // ),
-    // // NEW: Romaine Lettuce sell lot
-    // const SellLot(
-    //   name: 'Romaine Lettuce',
-    //   unit: '/kg',
-    //   assetPath: 'assets/romaine.jpg',
-    //   status: 'Open',
-    //   variants: [
-    //     VariantPrice(
-    //       id: 7,
-    //       size: LettuceSize.small,
-    //       variantType: LettuceVariantType.organic,
-    //       price: 50.0,
-    //       stockKg: 18.0,
-    //     ),
-    //     VariantPrice(
-    //       id: 8,
-    //       size: LettuceSize.small,
-    //       variantType: LettuceVariantType.nonOrganic,
-    //       price: 42.0,
-    //       stockKg: 22.0,
-    //     ),
-    //     VariantPrice(
-    //       id: 9,
-    //       size: LettuceSize.big,
-    //       variantType: LettuceVariantType.organic,
-    //       price: 58.0,
-    //       stockKg: 12.0,
-    //     ),
-    //     VariantPrice(
-    //       id: 10,
-    //       size: LettuceSize.big,
-    //       variantType: LettuceVariantType.nonOrganic,
-    //       price: 48.0,
-    //       stockKg: 28.0,
-    //     ),
-    //   ],
-    // ),
+    const SellLot(
+      name: 'Green Ice Lettuce',
+      unit: '/kg',
+      assetPath: 'assets/green_ice.jpg',
+      status: 'Open',
+      variants: [
+        VariantPrice(
+          id: 1,
+          size: LettuceSize.small,
+          variantType: LettuceVariantType.organic,
+          price: 55.0,
+          stockKg: 20.0,
+        ),
+        VariantPrice(
+          id: 2,
+          size: LettuceSize.small,
+          variantType: LettuceVariantType.nonOrganic,
+          price: 48.0,
+          stockKg: 40.0,
+        ),
+        VariantPrice(
+          id: 3,
+          size: LettuceSize.big,
+          variantType: LettuceVariantType.organic,
+          price: 62.0,
+          stockKg: 10.0,
+        ),
+        VariantPrice(
+          id: 4,
+          size: LettuceSize.big,
+          variantType: LettuceVariantType.nonOrganic,
+          price: 52.0,
+          stockKg: 30.0,
+        ),
+      ],
+    ),
+    const SellLot(
+      name: 'Iceberg Lettuce',
+      unit: '/kg',
+      assetPath: 'assets/iceberg.jpg',
+      status: 'Partially filled',
+      variants: [
+        VariantPrice(
+          id: 5,
+          size: LettuceSize.small,
+          variantType: LettuceVariantType.organic,
+          price: 45.0,
+          stockKg: 15.0,
+        ),
+        VariantPrice(
+          id: 6,
+          size: LettuceSize.big,
+          variantType: LettuceVariantType.nonOrganic,
+          price: 40.0,
+          stockKg: 25.0,
+        ),
+      ],
+    ),
+    // NEW: Romaine Lettuce sell lot
+    const SellLot(
+      name: 'Romaine Lettuce',
+      unit: '/kg',
+      assetPath: 'assets/romaine.jpg',
+      status: 'Open',
+      variants: [
+        VariantPrice(
+          id: 7,
+          size: LettuceSize.small,
+          variantType: LettuceVariantType.organic,
+          price: 50.0,
+          stockKg: 18.0,
+        ),
+        VariantPrice(
+          id: 8,
+          size: LettuceSize.small,
+          variantType: LettuceVariantType.nonOrganic,
+          price: 42.0,
+          stockKg: 22.0,
+        ),
+        VariantPrice(
+          id: 9,
+          size: LettuceSize.big,
+          variantType: LettuceVariantType.organic,
+          price: 58.0,
+          stockKg: 12.0,
+        ),
+        VariantPrice(
+          id: 10,
+          size: LettuceSize.big,
+          variantType: LettuceVariantType.nonOrganic,
+          price: 48.0,
+          stockKg: 28.0,
+        ),
+      ],
+    ),
   ];
 
   // Saved buy requests per item (by name)
