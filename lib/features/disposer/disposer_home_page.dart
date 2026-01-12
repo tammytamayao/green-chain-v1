@@ -147,7 +147,7 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                     // Product dropdown (name only)
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Product'),
-                      value: selectedProduct,
+                      initialValue: selectedProduct,
                       items: productOptions
                           .map(
                             (p) => DropdownMenuItem<String>(
@@ -167,7 +167,7 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                     // Type dropdown (Organic / Non-organic)
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Type'),
-                      value: selectedType,
+                      initialValue: selectedType,
                       items: typeOptions
                           .map(
                             (t) => DropdownMenuItem<String>(
@@ -187,7 +187,7 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                     // Size dropdown (Big / Small)
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Size'),
-                      value: selectedSize,
+                      initialValue: selectedSize,
                       items: sizeOptions
                           .map(
                             (s) => DropdownMenuItem<String>(
