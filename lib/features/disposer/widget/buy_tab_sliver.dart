@@ -10,12 +10,16 @@ class BuyTabSliver extends StatelessWidget {
     required this.buyRequests,
     required this.onSaveRequest,
     this.onDeleteRequest,
+    required this.processingByProductId, // NEW
   });
 
   final List<MarketItem> items;
 
   /// Map of productId -> requested weight (kg)
   final Map<int, double> buyRequests;
+
+  /// Map of productId -> whether there is already a request (supply) for its demand
+  final Map<int, bool> processingByProductId; // NEW
 
   final void Function(MarketItem item, double value) onSaveRequest;
   final void Function(MarketItem item)? onDeleteRequest;
@@ -31,11 +35,14 @@ class BuyTabSliver extends StatelessWidget {
           final item = items[i];
           final requested = buyRequests[item.productId];
           final hasRequest = requested != null && requested > 0;
+          final isProcessing =
+              processingByProductId[item.productId] ?? false; // NEW
 
           return BuyCard(
             item: item,
             initialRequest: requested,
             hasRequest: hasRequest,
+            isProcessing: isProcessing, // NEW
             onSave: (double value) => onSaveRequest(item, value),
             onDelete: onDeleteRequest == null
                 ? null

@@ -516,6 +516,9 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
     final marketItems = _buyMarketItems;
     final sellLots = _sellLotsFromInventory;
+    final Map<int, bool> processingByProductId = {
+      for (final d in _demands) d.productId: d.requestsCount > 0,
+    };
 
     return Scaffold(
       backgroundColor: softBg,
@@ -588,6 +591,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                       : BuyTabSliver(
                           items: marketItems,
                           buyRequests: _buyRequests,
+                          processingByProductId: processingByProductId, // NEW
                           onSaveRequest: (item, value) async {
                             try {
                               final demand = await createOrUpdateDemand(

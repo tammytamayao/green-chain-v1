@@ -2,11 +2,12 @@ class Demand {
   final int id;
   final double weight;
   final int stallId;
-  final String stallName; // NEW
+  final String stallName;
   final int productId;
   final String productName;
   final String productVariant;
-  final double? currentPrice; // NEW
+  final double? currentPrice;
+  final int requestsCount;
 
   Demand({
     required this.id,
@@ -17,6 +18,7 @@ class Demand {
     required this.productName,
     required this.productVariant,
     required this.currentPrice,
+    required this.requestsCount,
   });
 
   String get displayName => '$productVariant $productName';
@@ -33,6 +35,9 @@ class Demand {
       currentPrice: json['current_price'] == null
           ? null
           : (json['current_price'] as num).toDouble(),
+      requestsCount: json['requests_count'] == null
+          ? 0
+          : (json['requests_count'] as num).toInt(),
     );
   }
 }

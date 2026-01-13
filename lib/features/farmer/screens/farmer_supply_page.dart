@@ -47,6 +47,8 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
   DeliveryApproach deliveryApproach = DeliveryApproach.deliverRightAway;
   PaymentMethod paymentMethod = PaymentMethod.gcash;
 
+  bool _isSubmitting = false; // NEW
+
   @override
   void initState() {
     super.initState();
@@ -70,22 +72,30 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
     }
   }
 
+  Future<void> _showRejected() async {
+    await showRejectedBottomSheet(
+      context: context,
+      produceName: widget.produceName,
+      stallName: widget.stallName,
+    );
+  }
+
   Future<void> _onSupply() async {
-    if (!mounted) return;
+    if (!mounted || _isSubmitting) return;
 
-    final isConfirmed = cart.qtyKg >= 1; // your rule
-
+    // 1) Front-end rule: at least 1kg
+    final isConfirmed = cart.qtyKg >= 1;
     if (!isConfirmed) {
-      await showRejectedBottomSheet(
-        context: context,
-        produceName: widget.produceName,
-        stallName: widget.stallName,
-      );
+      await _showRejected();
       return;
     }
 
-    // Call backend to create supply + request
+    // 2) Call backend to create supply + request
     final methodStr = paymentMethod == PaymentMethod.gcash ? 'gcash' : 'cash';
+
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
       await createSupplyAndRequest(
@@ -97,9 +107,12 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to create supply: $e')));
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      // Backend failed (validation, mismatch, etc.) -> show same rejected modal
+      await _showRejected();
       return;
     }
 
@@ -107,6 +120,13 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
     final noteBody = _noteBodyByPayment(cart.total);
 
     if (!mounted) return;
+
+    // We navigate away, so _isSubmitting state is less important here,
+    // but we can reset it for safety if user pops back.
+    setState(() {
+      _isSubmitting = false;
+    });
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -206,7 +226,10 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
             ),
             const SizedBox(height: 18),
 
-            SupplyButton(enabled: state.canSupply, onPressed: _onSupply),
+            SupplyButton(
+              enabled: !_isSubmitting && state.canSupply,
+              onPressed: _onSupply,
+            ),
           ],
         ),
       ),

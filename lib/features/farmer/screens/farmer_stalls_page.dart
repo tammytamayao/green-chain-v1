@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/utils/date_utils.dart';
 import '../../../api/auth_api.dart';
 import '../../../account_page.dart';
 
@@ -8,7 +9,6 @@ import '../../../widgets/bottom_nav.dart';
 import 'farmer_home_page.dart';
 import 'farmer_supply_page.dart';
 
-// Use demand API + model
 import '../../../api/demand_api.dart';
 import '../../../models/demand.dart';
 
@@ -60,7 +60,10 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
       final items = await fetchDemands().timeout(const Duration(seconds: 8));
       if (!mounted) return;
 
-      final sections = _buildSectionsFromDemands(items);
+      // Only keep demands that have NO related requests
+      final noRequestItems = items.where((d) => d.requestsCount == 0).toList();
+
+      final sections = _buildSectionsFromDemands(noRequestItems);
 
       setState(() {
         _demandLoading = false;
@@ -139,28 +142,6 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
     return 'assets/romaine.jpg';
   }
 
-  String _niceNow() {
-    final now = DateTime.now();
-    const m = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final h = now.hour == 0 ? 12 : (now.hour > 12 ? now.hour - 12 : now.hour);
-    final ampm = now.hour >= 12 ? 'PM' : 'AM';
-    final mm = now.minute.toString().padLeft(2, '0');
-    return '${m[now.month - 1]} ${now.day}, ${now.year} | $h:$mm $ampm';
-  }
-
   void _goHome() => Navigator.pushReplacement(
     context,
     MaterialPageRoute(builder: (_) => const FarmerHomePage()),
@@ -233,7 +214,7 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _niceNow(),
+                        niceNow(),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade700,
@@ -245,15 +226,34 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
               ),
 
               // SECTIONS
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                sliver: SliverList.separated(
-                  itemCount: _sections.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 18),
-                  itemBuilder: (context, i) =>
-                      _DemandSection(data: _sections[i]),
+              // If no demand items left after filtering
+              if (_sections.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 40),
+                    child: Center(
+                      child: Text(
+                        'No stall demand available right now.\nCheck again later!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  sliver: SliverList.separated(
+                    itemCount: _sections.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 18),
+                    itemBuilder: (context, i) =>
+                        _DemandSection(data: _sections[i]),
+                  ),
                 ),
-              ),
             ],
           ],
         ),

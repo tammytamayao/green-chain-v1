@@ -8,6 +8,7 @@ class BuyCard extends StatelessWidget {
     required this.item,
     required this.initialRequest,
     required this.hasRequest,
+    required this.isProcessing, // NEW
     required this.onSave,
     this.onDelete,
   });
@@ -15,10 +16,14 @@ class BuyCard extends StatelessWidget {
   final MarketItem item;
   final double? initialRequest;
   final bool hasRequest;
+  final bool isProcessing; // NEW
   final ValueChanged<double> onSave;
   final VoidCallback? onDelete;
 
   void _openRequestDialog(BuildContext context) {
+    // If already processing, don't allow editing/creating
+    if (isProcessing) return;
+
     final controller = TextEditingController(
       text: initialRequest == null ? '' : initialRequest.toString(),
     );
@@ -174,10 +179,13 @@ class BuyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(20);
-    final requestedDisplay =
-        (!hasRequest || initialRequest == null || initialRequest! <= 0)
-        ? 'None yet'
-        : '${initialRequest!.toStringAsFixed(2)} kg';
+    final bool hasPositiveRequest =
+        hasRequest && initialRequest != null && initialRequest! > 0;
+
+    // Separate "amount" and "status" so status can reflect the DB status column.
+    final String requestAmountText = hasPositiveRequest
+        ? '${initialRequest!.toStringAsFixed(2)} kg'
+        : 'None yet';
 
     return Container(
       decoration: BoxDecoration(
@@ -239,8 +247,10 @@ class BuyCard extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                 ),
                 const SizedBox(height: 4),
+
+                // Requested amount
                 Text(
-                  'Requested: $requestedDisplay',
+                  'Requested: $requestAmountText',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade800,
@@ -250,30 +260,9 @@ class BuyCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: hasRequest
-                      ? OutlinedButton.icon(
-                          onPressed: onDelete,
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          label: const Text(
-                            'Delete request',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red.shade700,
-                            side: BorderSide(color: Colors.red.shade300),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        )
-                      : ElevatedButton.icon(
+                  child: !hasPositiveRequest
+                      // No request yet → show "Request" button
+                      ? ElevatedButton.icon(
                           onPressed: () => _openRequestDialog(context),
                           icon: const Icon(
                             Icons.shopping_cart_outlined,
@@ -298,7 +287,69 @@ class BuyCard extends StatelessWidget {
                             ),
                             elevation: 1.5,
                           ),
-                        ),
+                        )
+                      : (isProcessing
+                            // Request exists AND has at least one supply/request row
+                            // → show "Processing" UI (no delete)
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.orange.shade300,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.hourglass_top,
+                                      size: 18,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Processing',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.orange.shade800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            // Request exists but no active processing request
+                            // → allow delete
+                            : OutlinedButton.icon(
+                                onPressed: onDelete,
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Delete request',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red.shade700,
+                                  side: BorderSide(color: Colors.red.shade300),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              )),
                 ),
               ],
             ),
