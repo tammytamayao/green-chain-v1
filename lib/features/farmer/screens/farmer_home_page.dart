@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/api/product_api.dart';
+import 'package:green_chain_v1/models/product.dart';
 import '../../../auth_api.dart';
+import '../../../widgets/current_price.dart';
+import '../widgets/farmer_product_card.dart';
 import 'farmer_stalls_page.dart';
 import '../../../account_page.dart';
 
 import '../../../ui/green_theme.dart';
 import '../../../widgets/banner_header.dart';
 import '../../../widgets/bottom_nav.dart';
+
+import 'package:green_chain_v1/utils/product_assets.dart';
 
 class FarmerHomePage extends StatefulWidget {
   const FarmerHomePage({super.key});
@@ -14,32 +20,14 @@ class FarmerHomePage extends StatefulWidget {
 }
 
 class _FarmerHomePageState extends State<FarmerHomePage> {
-  Map<String, dynamic>? _profile; // null = loading
+  Map<String, dynamic>? _profile;
   String? _error;
 
-  final List<Map<String, dynamic>> _items = const [
-    {
-      'name': 'Green Ice Lettuce',
-      'price': 50.00,
-      'unit': '/kg',
-      'asset': 'assets/green_ice.jpg',
-    },
-    {
-      'name': 'Iceberg Lettuce',
-      'price': 40.00,
-      'unit': '/kg',
-      'asset': 'assets/iceberg.jpg',
-    },
-    {
-      'name': 'Romaine Lettuce',
-      'price': 30.00,
-      'unit': '/kg',
-      'asset': 'assets/romaine.jpg',
-    },
-  ];
+  List<Product> _products = [];
+  bool _loadingProducts = true;
+  String? _productsError;
 
   static const primaryGreen = GreenTheme.primary;
-  static const chipGreen = Color(0xFF4F7652);
   static const softBg = GreenTheme.softBg;
 
   @override
@@ -51,40 +39,28 @@ class _FarmerHomePageState extends State<FarmerHomePage> {
   Future<void> _load() async {
     try {
       final p = await me().timeout(const Duration(seconds: 8));
+      final items = await fetchProducts();
+
       if (!mounted) return;
       setState(() {
         _profile = p ?? {};
         _error = null;
+
+        _products = items;
+        _loadingProducts = false;
+        _productsError = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _profile = {};
-        _error = 'Could not load profile';
+        _profile ??= {};
+        _error ??= 'Could not load profile';
+
+        _products = [];
+        _loadingProducts = false;
+        _productsError = 'Could not load products';
       });
     }
-  }
-
-  String _niceNow() {
-    final now = DateTime.now();
-    const m = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final h = now.hour == 0 ? 12 : (now.hour > 12 ? now.hour - 12 : now.hour);
-    final ampm = now.hour >= 12 ? 'PM' : 'AM';
-    final mm = now.minute.toString().padLeft(2, '0');
-    return '${m[now.month - 1]} ${now.day}, ${now.year} | $h:$mm $ampm';
   }
 
   void _goHome() {}
@@ -99,7 +75,9 @@ class _FarmerHomePageState extends State<FarmerHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final loading = _profile == null;
+    final loadingProfile = _profile == null;
+    final loading = loadingProfile || _loadingProducts;
+    final hasProducts = _products.isNotEmpty;
 
     return Scaffold(
       backgroundColor: softBg,
@@ -109,7 +87,7 @@ class _FarmerHomePageState extends State<FarmerHomePage> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              const BannerHeaderSliver(), // <— banner header here
+              const BannerHeaderSliver(),
 
               if (loading)
                 const SliverFillRemaining(
@@ -129,52 +107,51 @@ class _FarmerHomePageState extends State<FarmerHomePage> {
                       ),
                     ),
                   ),
-
-                // Section title
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Current Price',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: primaryGreen,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _niceNow(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ],
+                if (_productsError != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Text(
+                        _productsError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
                     ),
                   ),
-                ),
 
-                // Produce list
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  sliver: SliverList.separated(
-                    itemCount: _items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) {
-                      final it = _items[i];
-                      return _ProduceCard(
-                        name: it['name'] as String,
-                        price: (it['price'] as num).toDouble(),
-                        unit: it['unit'] as String,
-                        assetPath: it['asset'] as String,
-                      );
-                    },
+                const CurrentPriceHeader(),
+
+                if (!hasProducts)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text(
+                        'No products available yet.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    sliver: SliverList.separated(
+                      itemCount: _products.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final p = _products[i];
+                        final asset = assetForProduct(p);
+                        final title = '${p.variant} ${p.name}';
+                        return FarmerProductCard(
+                          name: title,
+                          price: p.currentPrice,
+                          unit: '/kg',
+                          assetPath: asset,
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             ],
           ),
@@ -184,106 +161,8 @@ class _FarmerHomePageState extends State<FarmerHomePage> {
         role: UserRole.farmer,
         current: AppTab.home,
         onHome: _goHome,
-        onMiddle: _goStalls, // middle = Stalls for farmers
+        onMiddle: _goStalls,
         onAccount: _goAccount,
-      ),
-    );
-  }
-}
-
-class _ProduceCard extends StatelessWidget {
-  const _ProduceCard({
-    required this.name,
-    required this.price,
-    required this.unit,
-    required this.assetPath,
-  });
-  final String name;
-  final double price;
-  final String unit;
-  final String assetPath;
-  static const chipGreen = _FarmerHomePageState.chipGreen;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(16);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.asset(
-                assetPath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Image.asset('assets/romaine.jpg', fit: BoxFit.cover),
-              ),
-            ),
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.transparent, Colors.black26],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 8,
-              left: 10,
-              right: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: chipGreen.withAlpha((0.95 * 255).round()),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      '₱${price.toStringAsFixed(2)} $unit',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

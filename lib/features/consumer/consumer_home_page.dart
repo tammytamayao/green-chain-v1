@@ -15,7 +15,7 @@ class ConsumerHomePage extends StatefulWidget {
 }
 
 class _ConsumerHomePageState extends State<ConsumerHomePage> {
-  Map<String, dynamic>? _profile; // null = loading
+  Map<String, dynamic>? _profile;
   String? _error;
 
   /// For now this is static placeholder data.

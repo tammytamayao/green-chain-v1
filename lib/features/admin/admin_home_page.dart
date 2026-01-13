@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/api/product_api.dart';
+import 'package:green_chain_v1/models/product.dart';
 import 'package:green_chain_v1/ui/green_theme.dart';
 import 'package:green_chain_v1/widgets/banner_header.dart';
 import 'package:green_chain_v1/widgets/bottom_nav.dart';
 import 'package:green_chain_v1/account_page.dart';
 import 'package:green_chain_v1/features/admin/admin_monitoring_page.dart';
-import 'package:green_chain_v1/features/admin/admin_api.dart';
+import 'package:green_chain_v1/utils/product_assets.dart';
+import 'package:green_chain_v1/widgets/current_price.dart';
+import 'widgets/admin_product_card.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -16,7 +20,6 @@ class AdminHomePage extends StatefulWidget {
 class _AdminHomePageState extends State<AdminHomePage> {
   static const primaryGreen = GreenTheme.primary;
   static const softBg = GreenTheme.softBg;
-  static const chipGreen = Color(0xFF4F7652);
 
   List<Product> _products = [];
   bool _loading = true;
@@ -48,28 +51,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
         _error = 'Could not load products: $e';
       });
     }
-  }
-
-  String _niceNow() {
-    final now = DateTime.now();
-    const m = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final h = now.hour == 0 ? 12 : (now.hour > 12 ? now.hour - 12 : now.hour);
-    final ampm = now.hour >= 12 ? 'PM' : 'AM';
-    final mm = now.minute.toString().padLeft(2, '0');
-    return '${m[now.month - 1]} ${now.day}, ${now.year} | $h:$mm $ampm';
   }
 
   Future<void> _showEditPriceDialog(Product product) async {
@@ -137,7 +118,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       },
     );
 
-    if (newPrice == null) return; // cancelled
+    if (newPrice == null) return;
 
     try {
       final updated = await updateProductPrice(product.id, newPrice);
@@ -336,10 +317,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   Future<void> _goAddProduct() => _showAddProductDialog();
 
-  void _goHome() {
-    // already here
-  }
-
+  void _goHome() {}
   void _goMonitoring() {
     Navigator.pushReplacement(
       context,
@@ -352,13 +330,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
       context,
       MaterialPageRoute(builder: (_) => const AccountPage()),
     );
-  }
-
-  /// Build asset path from variant:
-  /// "Green Ice" -> "assets/green_ice.jpg"
-  String _assetForProduct(Product p) {
-    final slug = p.variant.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
-    return 'assets/$slug.jpg';
   }
 
   @override
@@ -394,40 +365,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                     ),
                   ),
 
-                // Header (similar to FarmerHomePage)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Current Price',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: primaryGreen,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _niceNow(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                const CurrentPriceHeader(),
 
                 if (!hasProducts)
                   SliverFillRemaining(
@@ -451,7 +389,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Start by adding your first product.\nFarmers and disposers will see these prices.',
+                            'Start by adding your first product.\n'
+                            'Farmers and disposers will see these prices.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
@@ -484,9 +423,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
                         final p = _products[i];
-                        return _AdminProductCard(
+                        return AdminProductCard(
                           product: p,
-                          assetPath: _assetForProduct(p),
+                          assetPath: assetForProduct(p),
                           onEdit: () => _showEditPriceDialog(p),
                           onDelete: () => _confirmDelete(p),
                         );
@@ -506,186 +445,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
             )
           : null,
       bottomNavigationBar: BottomNav(
-        // Still using farmer visuals; if you add UserRole.admin later, swap this.
-        role: UserRole.farmer,
+        role: UserRole.admin,
         current: AppTab.home,
         onHome: _goHome,
         onMiddle: _goMonitoring,
         onAccount: _goAccount,
-      ),
-    );
-  }
-}
-
-class _AdminProductCard extends StatelessWidget {
-  const _AdminProductCard({
-    required this.product,
-    required this.assetPath,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final Product product;
-  final String assetPath;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  static const chipGreen = _AdminHomePageState.chipGreen;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(16);
-    final title = '${product.variant} ${product.name}';
-    final price = product.currentPrice;
-    final priceText = price == null
-        ? 'No price set'
-        : '₱${price.toStringAsFixed(2)} /kg';
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).round()),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          children: [
-            // Background image
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.asset(
-                assetPath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) {
-                  return Container(
-                    color: Colors.white,
-                    child: const Center(
-                      child: Icon(
-                        Icons.local_florist_outlined,
-                        size: 48,
-                        color: GreenTheme.primary,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Gradient overlay
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.transparent, Colors.black54],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-              ),
-            ),
-
-            // Top-right delete icon
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Material(
-                color: Colors.black54,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: onDelete,
-                  child: const Padding(
-                    padding: EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.delete_outline,
-                      size: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Bottom info bar: name/variant + price + edit icon
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 8,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: onEdit,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: chipGreen.withAlpha((0.97 * 255).round()),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Big title (variant + name)
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Price + edit icon
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                priceText,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: onEdit,
-                                child: const Padding(
-                                  padding: EdgeInsets.all(4),
-                                  child: Icon(
-                                    Icons.edit_outlined,
-                                    size: 20,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

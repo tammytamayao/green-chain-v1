@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/features/admin/widgets/admin_stat_card.dart';
+import 'package:green_chain_v1/features/admin/widgets/admin_user_count_chip.dart';
 import 'package:green_chain_v1/ui/green_theme.dart';
 import 'package:green_chain_v1/widgets/banner_header.dart';
 import 'package:green_chain_v1/widgets/bottom_nav.dart';
 import 'package:green_chain_v1/account_page.dart';
 import 'package:green_chain_v1/features/admin/admin_home_page.dart';
-import 'package:green_chain_v1/features/admin/admin_api.dart';
+import 'package:green_chain_v1/api/product_api.dart' show fetchAdminMetrics;
 
 class AdminMonitoringPage extends StatefulWidget {
   const AdminMonitoringPage({super.key});
@@ -17,7 +19,8 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
   static const primaryGreen = GreenTheme.primary;
   static const softBg = GreenTheme.softBg;
 
-  Map<String, dynamic>? _metrics; // null = loading
+  Map<String, dynamic>? _metrics;
+  bool _loading = true;
   String? _error;
 
   @override
@@ -28,19 +31,23 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
 
   Future<void> _load() async {
     setState(() {
-      _metrics = null;
+      _loading = true;
       _error = null;
+      _metrics = null;
     });
+
     try {
       final data = await fetchAdminMetrics();
       if (!mounted) return;
       setState(() {
         _metrics = data;
+        _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _metrics = {};
+        _loading = false;
         _error = 'Failed to load metrics: $e';
       });
     }
@@ -63,10 +70,26 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
     return int.tryParse(val.toString()) ?? 0;
   }
 
+  void _goHome() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminHomePage()),
+    );
+  }
+
+  void _goMonitoring() {
+    // already here
+  }
+
+  void _goAccount() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const AccountPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final loading = _metrics == null;
-
     return Scaffold(
       backgroundColor: softBg,
       body: SafeArea(
@@ -77,7 +100,7 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
             slivers: [
               const BannerHeaderSliver(),
 
-              if (loading)
+              if (_loading)
                 const SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
@@ -148,14 +171,14 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
                             const SizedBox(height: 12),
                             Row(
                               children: [
-                                _UserCountChip(
+                                AdminUserCountChip(
                                   label: 'Farmers',
                                   count: _getUserCount('farmer'),
                                   icon: Icons.agriculture_outlined,
                                   color: Colors.green.shade600,
                                 ),
                                 const SizedBox(width: 8),
-                                _UserCountChip(
+                                AdminUserCountChip(
                                   label: 'Disposers',
                                   count: _getUserCount('disposer'),
                                   icon: Icons.store_mall_directory_outlined,
@@ -166,14 +189,14 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                _UserCountChip(
+                                AdminUserCountChip(
                                   label: 'Drivers',
                                   count: _getUserCount('driver'),
                                   icon: Icons.local_shipping_outlined,
                                   color: Colors.orange.shade600,
                                 ),
                                 const SizedBox(width: 8),
-                                _UserCountChip(
+                                AdminUserCountChip(
                                   label: 'Consumers',
                                   count: _getUserCount('consumer'),
                                   icon: Icons.person_outline,
@@ -196,28 +219,28 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        _StatCard(
+                        AdminStatCard(
                           title: 'Requests',
                           value: _getIntField('requests'),
                           icon: Icons.swap_horiz_outlined,
                           color: Colors.purple.shade600,
                         ),
                         const SizedBox(height: 10),
-                        _StatCard(
+                        AdminStatCard(
                           title: 'Stalls',
                           value: _getIntField('stalls'),
                           icon: Icons.storefront_outlined,
                           color: Colors.brown.shade600,
                         ),
                         const SizedBox(height: 10),
-                        _StatCard(
+                        AdminStatCard(
                           title: 'Orders',
                           value: _getIntField('orders'),
                           icon: Icons.receipt_long_outlined,
                           color: Colors.indigo.shade600,
                         ),
                         const SizedBox(height: 10),
-                        _StatCard(
+                        AdminStatCard(
                           title: 'Feedbacks',
                           value: _getIntField('feedbacks'),
                           icon: Icons.rate_review_outlined,
@@ -235,135 +258,11 @@ class _AdminMonitoringPageState extends State<AdminMonitoringPage> {
         ),
       ),
       bottomNavigationBar: BottomNav(
-        role: UserRole.farmer, // reusing visuals
-        current: AppTab.middle, // monitoring tab
-        onHome: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminHomePage()),
-          );
-        },
-        onMiddle: () {
-          // already here
-        },
-        onAccount: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AccountPage()),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _UserCountChip extends StatelessWidget {
-  const _UserCountChip({
-    required this.label,
-    required this.count,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final int count;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, size: 20, color: color),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              '$count',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String title;
-  final int value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 24, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              '$value',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: color,
-              ),
-            ),
-          ],
-        ),
+        role: UserRole.admin,
+        current: AppTab.middle,
+        onHome: _goHome,
+        onMiddle: _goMonitoring,
+        onAccount: _goAccount,
       ),
     );
   }
