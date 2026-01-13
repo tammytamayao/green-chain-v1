@@ -5,7 +5,7 @@ import '../ui/green_theme.dart';
 enum AppTab { home, middle, account }
 
 /// Map backend profile['type'] to this.
-enum UserRole { farmer, driver, disposer }
+enum UserRole { farmer, driver, disposer, admin, consumer }
 
 class BottomNav extends StatelessWidget {
   const BottomNav({
@@ -32,6 +32,10 @@ class BottomNav extends StatelessWidget {
       case UserRole.disposer:
         return (Icons.shopping_cart_outlined, 'Disposals');
       case UserRole.farmer:
+        return (Icons.inventory_2_rounded, 'Stalls');
+      case UserRole.admin:
+        return (Icons.inventory_2_rounded, 'Stalls');
+      case UserRole.consumer:
         return (Icons.inventory_2_rounded, 'Stalls');
     }
   }
