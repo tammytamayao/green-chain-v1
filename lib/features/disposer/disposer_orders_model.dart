@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 @immutable
 class MarketItem {
+  final int productId;
   final String name;
   final double price;
   final String unit;
@@ -9,6 +10,7 @@ class MarketItem {
   final int available;
 
   const MarketItem({
+    required this.productId,
     required this.name,
     required this.price,
     required this.unit,

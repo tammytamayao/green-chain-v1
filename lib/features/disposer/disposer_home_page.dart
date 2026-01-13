@@ -7,6 +7,12 @@ import '../../../../../widgets/banner_header.dart';
 import '../../../../../widgets/bottom_nav.dart';
 import 'disposer_orders_page.dart';
 
+import 'package:green_chain_v1/models/product.dart';
+import 'package:green_chain_v1/api/product_api.dart' show fetchProducts;
+import 'package:green_chain_v1/models/stall_inventory_item.dart';
+import 'package:green_chain_v1/api/stall_inventory_api.dart'
+    show fetchStallInventory;
+
 class DisposerHomePage extends StatefulWidget {
   const DisposerHomePage({super.key});
 
@@ -18,32 +24,15 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
   Map<String, dynamic>? _profile; // null = loading
   String? _error;
 
-  final List<Map<String, dynamic>> _inventory = const [
-    {
-      'name': 'Green Ice Lettuce',
-      'price': 50.00,
-      'unit': '/kg',
-      'asset': 'assets/green_ice.jpg',
-      'stock': 120,
-      'orders': 35,
-    },
-    {
-      'name': 'Iceberg Lettuce',
-      'price': 40.00,
-      'unit': '/kg',
-      'asset': 'assets/iceberg.jpg',
-      'stock': 75,
-      'orders': 18,
-    },
-    {
-      'name': 'Romaine Lettuce',
-      'price': 30.00,
-      'unit': '/kg',
-      'asset': 'assets/romaine.jpg',
-      'stock': 52,
-      'orders': 22,
-    },
-  ];
+  // Stall inventory rows from backend (for this disposer’s stall)
+  List<StallInventoryItem> _inventory = [];
+  bool _loadingInventory = true;
+  String? _inventoryError;
+
+  // Products from backend
+  List<Product> _products = [];
+  bool _loadingProducts = true;
+  String? _productsError;
 
   static const primaryGreen = GreenTheme.primary;
   static const chipGreen = Color(0xFF4F7652);
@@ -58,16 +47,35 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
   Future<void> _load() async {
     try {
       final p = await me().timeout(const Duration(seconds: 8));
+      final inventory = await fetchStallInventory();
+      final products = await fetchProducts();
+
       if (!mounted) return;
       setState(() {
         _profile = p ?? {};
         _error = null;
+
+        _inventory = inventory;
+        _loadingInventory = false;
+        _inventoryError = null;
+
+        _products = products;
+        _loadingProducts = false;
+        _productsError = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _profile = {};
-        _error = 'Could not load profile';
+        _profile ??= {};
+        _error ??= 'Could not load profile';
+
+        _inventory = [];
+        _loadingInventory = false;
+        _inventoryError ??= 'Could not load inventory';
+
+        _products = [];
+        _loadingProducts = false;
+        _productsError ??= 'Could not load products';
       });
     }
   }
@@ -110,217 +118,31 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
     MaterialPageRoute(builder: (_) => const AccountPage()),
   );
 
-  Future<void> _showAddInventoryDialog() async {
-    // Product names only (no organic / non-organic labels here)
-    final productOptions = <String>[
-      'Green Ice Lettuce',
-      'Iceberg Lettuce',
-      'Romaine Lettuce',
-    ];
-
-    final typeOptions = <String>['Organic', 'Non-organic'];
-
-    final sizeOptions = <String>['Big', 'Small'];
-
-    final classController = TextEditingController();
-    final freshnessController = TextEditingController();
-    final stocksController = TextEditingController();
-
-    String? localError;
-    bool saving = false;
-
-    String? selectedProduct;
-    String? selectedType;
-    String? selectedSize;
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Add stock inventory'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Product dropdown (name only)
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Product'),
-                      initialValue: selectedProduct,
-                      items: productOptions
-                          .map(
-                            (p) => DropdownMenuItem<String>(
-                              value: p,
-                              child: Text(p),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        setStateDialog(() {
-                          selectedProduct = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Type dropdown (Organic / Non-organic)
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Type'),
-                      initialValue: selectedType,
-                      items: typeOptions
-                          .map(
-                            (t) => DropdownMenuItem<String>(
-                              value: t,
-                              child: Text(t),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        setStateDialog(() {
-                          selectedType = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Size dropdown (Big / Small)
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Size'),
-                      initialValue: selectedSize,
-                      items: sizeOptions
-                          .map(
-                            (s) => DropdownMenuItem<String>(
-                              value: s,
-                              child: Text(s),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        setStateDialog(() {
-                          selectedSize = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Class
-                    TextField(
-                      controller: classController,
-                      decoration: const InputDecoration(
-                        labelText: 'Class',
-                        hintText: 'e.g., A, B, Premium',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Freshness
-                    TextField(
-                      controller: freshnessController,
-                      decoration: const InputDecoration(
-                        labelText: 'Freshness',
-                        hintText: 'e.g., Newly harvested, 1 day old',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Stocks
-                    TextField(
-                      controller: stocksController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Stocks (kg)',
-                      ),
-                    ),
-
-                    if (localError != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        localError!,
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: saving
-                      ? null
-                      : () => Navigator.of(ctx).pop<void>(),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: saving
-                      ? null
-                      : () async {
-                          final klass = classController.text.trim();
-                          final freshness = freshnessController.text.trim();
-                          final stocksText = stocksController.text.trim();
-
-                          if (selectedProduct == null ||
-                              selectedType == null ||
-                              selectedSize == null ||
-                              klass.isEmpty ||
-                              freshness.isEmpty ||
-                              stocksText.isEmpty) {
-                            setStateDialog(() {
-                              localError =
-                                  'Please fill in all fields and select product, type and size.';
-                            });
-                            return;
-                          }
-
-                          final stocks = double.tryParse(stocksText);
-                          if (stocks == null || stocks <= 0) {
-                            setStateDialog(() {
-                              localError =
-                                  'Enter a valid positive number for stocks.';
-                            });
-                            return;
-                          }
-
-                          setStateDialog(() {
-                            saving = true;
-                            localError = null;
-                          });
-
-                          // TODO: hook this into your inventory logic / API.
-                          // For now: show confirmation and close.
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Stock added: $selectedProduct '
-                                '($selectedType, $selectedSize, $stocks kg)',
-                              ),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-
-                          if (ctx.mounted) {
-                            Navigator.of(ctx).pop<void>();
-                          }
-                        },
-                  child: Text(saving ? 'Saving...' : 'Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  // Image path derived from product variant:
+  // "Green Ice" -> assets/green_ice.jpg
+  String _assetForProductVariant(String variant) {
+    final slug = variant.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    return 'assets/$slug.jpg';
   }
 
-  // FAB handler: open the modal dialog
-  void _onAddInventory() {
-    _showAddInventoryDialog();
+  /// Aggregate total stocks and orders across all stall_inventory rows
+  /// for this product (for this disposer’s stall).
+  (double totalStocks, int totalOrders) _statsForProduct(Product product) {
+    final matching = _inventory.where((it) => it.productId == product.id);
+    double stocks = 0.0;
+    int orders = 0;
+    for (final it in matching) {
+      stocks += it.stocks;
+      orders += it.ordersCount;
+    }
+    return (stocks, orders);
   }
 
   @override
   Widget build(BuildContext context) {
-    final loading = _profile == null;
+    final loadingProfile = _profile == null;
+    final loading = loadingProfile || _loadingInventory || _loadingProducts;
+    final hasProducts = _products.isNotEmpty;
 
     return Scaffold(
       backgroundColor: softBg,
@@ -346,6 +168,26 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                       child: Text(
                         _error!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                if (_inventoryError != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Text(
+                        _inventoryError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                if (_productsError != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Text(
+                        _productsError!,
                         style: const TextStyle(color: Colors.red, fontSize: 13),
                       ),
                     ),
@@ -379,8 +221,8 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                   ),
                 ),
 
-                // Inventory list OR empty state
-                if (_inventory.isEmpty)
+                // Product-based list (like Farmer), with stats from stall_inventory
+                if (!hasProducts)
                   SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
@@ -394,7 +236,7 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                           ),
                           const SizedBox(height: 16),
                           const Text(
-                            'No inventory yet',
+                            'No products found',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -402,7 +244,8 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Tap the + button below to add your first stock item.',
+                            'Ask the admin to add products.\n'
+                            'Stocks and orders will show automatically here.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
@@ -417,17 +260,23 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                     sliver: SliverList.separated(
-                      itemCount: _inventory.length,
+                      itemCount: _products.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
-                        final it = _inventory[i];
+                        final p = _products[i];
+                        final (totalStocks, totalOrders) = _statsForProduct(p);
+
+                        final name = '${p.variant} ${p.name}';
+                        final price = p.currentPrice ?? 0.0;
+                        final asset = _assetForProductVariant(p.variant);
+
                         return _InventoryCard(
-                          name: it['name'] as String,
-                          price: (it['price'] as num).toDouble(),
-                          unit: it['unit'] as String,
-                          assetPath: it['asset'] as String,
-                          stock: it['stock'] as int,
-                          orders: it['orders'] as int,
+                          name: name,
+                          price: price,
+                          unit: '/kg',
+                          assetPath: asset,
+                          stock: totalStocks,
+                          orders: totalOrders,
                         );
                       },
                     ),
@@ -438,21 +287,17 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
         ),
       ),
       bottomNavigationBar: BottomNav(
-        role: UserRole.disposer, // <-- disposer role
+        role: UserRole.disposer, // disposer role
         current: AppTab.home,
         onHome: _goHome,
         onMiddle: _goMiddle,
         onAccount: _goAccount,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onAddInventory,
-        backgroundColor: primaryGreen,
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
+
+// === UI components: retained Disposer UI, only data changed ===
 
 class _InventoryCard extends StatelessWidget {
   const _InventoryCard({
@@ -468,7 +313,7 @@ class _InventoryCard extends StatelessWidget {
   final double price;
   final String unit;
   final String assetPath;
-  final int stock;
+  final double stock; // aggregated, but shown as whole kg
   final int orders;
 
   static const chipGreen = _DisposerHomePageState.chipGreen;
@@ -493,6 +338,7 @@ class _InventoryCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // LEFT: text & stats
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,7 +354,6 @@ class _InventoryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
-
                 Text(
                   '₱${price.toStringAsFixed(2)} $unit',
                   style: TextStyle(
@@ -522,7 +367,10 @@ class _InventoryCard extends StatelessWidget {
                 // Stock + Orders
                 Row(
                   children: [
-                    _StatPill(label: 'Stock', value: '$stock'),
+                    _StatPill(
+                      label: 'Stock',
+                      value: stock.toStringAsFixed(0), // as whole kg
+                    ),
                     const SizedBox(width: 12),
                     _StatPill(label: 'Orders', value: '$orders'),
                   ],

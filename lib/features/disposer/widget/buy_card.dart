@@ -7,12 +7,16 @@ class BuyCard extends StatelessWidget {
     super.key,
     required this.item,
     required this.initialRequest,
+    required this.hasRequest,
     required this.onSave,
+    this.onDelete,
   });
 
   final MarketItem item;
   final double? initialRequest;
+  final bool hasRequest;
   final ValueChanged<double> onSave;
+  final VoidCallback? onDelete;
 
   void _openRequestDialog(BuildContext context) {
     final controller = TextEditingController(
@@ -36,14 +40,6 @@ class BuyCard extends StatelessWidget {
                 setStateSB(() => errorText = 'Enter a valid positive number');
                 return;
               }
-              if (value > item.available) {
-                setStateSB(
-                  () => errorText =
-                      'Cannot request more than stock (${item.available} kg)',
-                );
-                return;
-              }
-
               onSave(value);
               Navigator.of(ctx).pop();
             }
@@ -125,7 +121,7 @@ class BuyCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
 
-                  // Request field (unchanged behavior)
+                  // Request field
                   TextField(
                     controller: controller,
                     keyboardType: const TextInputType.numberWithOptions(
@@ -178,7 +174,8 @@ class BuyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(20);
-    final requestedDisplay = (initialRequest == null || initialRequest! <= 0)
+    final requestedDisplay =
+        (!hasRequest || initialRequest == null || initialRequest! <= 0)
         ? 'None yet'
         : '${initialRequest!.toStringAsFixed(2)} kg';
 
@@ -214,7 +211,7 @@ class BuyCard extends StatelessWidget {
           ),
           const SizedBox(width: 18),
 
-          // RIGHT side info
+          // RIGHT: info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,29 +250,55 @@ class BuyCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openRequestDialog(context),
-                    icon: const Icon(Icons.shopping_cart_outlined, size: 18),
-                    label: const Text(
-                      'Request',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: GreenTheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 1.5,
-                    ),
-                  ),
+                  child: hasRequest
+                      ? OutlinedButton.icon(
+                          onPressed: onDelete,
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: const Text(
+                            'Delete request',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red.shade700,
+                            side: BorderSide(color: Colors.red.shade300),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: () => _openRequestDialog(context),
+                          icon: const Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            'Request',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: GreenTheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 1.5,
+                          ),
+                        ),
                 ),
               ],
             ),

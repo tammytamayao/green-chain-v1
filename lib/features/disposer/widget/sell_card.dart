@@ -13,6 +13,10 @@ class SellCard extends StatelessWidget {
   final void Function(VariantPrice variant, double newPrice)
   onUpdateVariantPrice;
 
+  /// Build 4 tiles (Small/Big × Organic/Non-organic).
+  /// If a combination doesn't exist in [lot.variants], we create
+  /// a "dummy" VariantPrice with id = -1 and 0 price/stock so
+  /// the grid still looks complete.
   List<VariantPrice> _buildAllVariants() {
     final List<VariantPrice> all = [];
     for (final size in LettuceSize.values) {
@@ -168,6 +172,7 @@ class SellCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top row: image + basic info
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -207,7 +212,8 @@ class SellCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     if (lot.variants.isNotEmpty)
                       Text(
-                        'Price range: ₱${lot.minPrice.toStringAsFixed(2)} - ₱${lot.maxPrice.toStringAsFixed(2)} ${lot.unit}',
+                        'Price range: ₱${lot.minPrice.toStringAsFixed(2)} '
+                        '- ₱${lot.maxPrice.toStringAsFixed(2)} ${lot.unit}',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey.shade700,
@@ -219,6 +225,7 @@ class SellCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          // Grid of size/type variants
           LayoutBuilder(
             builder: (context, constraints) {
               const double spacing = 10;
@@ -232,7 +239,21 @@ class SellCard extends StatelessWidget {
                     child: _VariantTile(
                       lot: lot,
                       variant: variant,
-                      onTap: () => _openEditPriceDialog(context, variant),
+                      onTap: () {
+                        // IMPORTANT: only edit real variants.
+                        if (variant.id == -1) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'No inventory for this size/type yet. '
+                                'Add stock first in your Inventory page.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        _openEditPriceDialog(context, variant);
+                      },
                     ),
                   );
                 }).toList(),
@@ -258,48 +279,62 @@ class _VariantTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
+    final bool isDummy = variant.id == -1;
+
+    return Opacity(
+      opacity: isDummy ? 0.5 : 1.0,
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: GreenTheme.primary.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${variant.size.label} • ${variant.variantType.label}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: GreenTheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${variant.size.label} • ${variant.variantType.label}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '₱${variant.price.toStringAsFixed(2)} ${lot.unit}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: GreenTheme.primary,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isDummy
+                            ? 'No price'
+                            : '₱${variant.price.toStringAsFixed(2)} ${lot.unit}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: isDummy
+                              ? Colors.grey.shade600
+                              : GreenTheme.primary,
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    '${variant.stockKg.toStringAsFixed(1)} kg',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  ),
-                ],
-              ),
-            ],
+                    Text(
+                      isDummy
+                          ? '0.0 kg'
+                          : '${variant.stockKg.toStringAsFixed(1)} kg',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

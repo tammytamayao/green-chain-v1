@@ -12,6 +12,16 @@ import 'widget/orders_header_sliver.dart';
 import 'widget/orders_segment_switch_sliver.dart';
 import 'widget/sell_tab_sliver.dart';
 
+// Backend data
+import 'package:green_chain_v1/models/product.dart';
+import 'package:green_chain_v1/api/product_api.dart' show fetchProducts;
+import 'package:green_chain_v1/models/stall_inventory_item.dart';
+import 'package:green_chain_v1/api/stall_inventory_api.dart'
+    show fetchStallInventory, updateStallInventory, createStallInventory;
+import 'package:green_chain_v1/models/demand.dart';
+import 'package:green_chain_v1/api/demand_api.dart'
+    show fetchDemands, createOrUpdateDemand, deleteDemand;
+
 class DisposerOrdersPage extends StatefulWidget {
   const DisposerOrdersPage({super.key});
 
@@ -25,132 +35,22 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
   int _tabIndex = 0; // 0 = Buy, 1 = Sell
 
-  // Mock data — you can later wire to backend
-  final List<MarketItem> _marketItems = const [
-    MarketItem(
-      name: 'Green Ice Lettuce',
-      price: 48.00,
-      unit: '/kg',
-      assetPath: 'assets/green_ice.jpg',
-      available: 200,
-    ),
-    MarketItem(
-      name: 'Iceberg Lettuce',
-      price: 38.00,
-      unit: '/kg',
-      assetPath: 'assets/iceberg.jpg',
-      available: 160,
-    ),
-    MarketItem(
-      name: 'Romaine Lettuce',
-      price: 32.00,
-      unit: '/kg',
-      assetPath: 'assets/romaine.jpg',
-      available: 120,
-    ),
-  ];
+  // Backend data
+  List<Product> _products = [];
+  bool _loadingProducts = true;
 
-  // Not const so we can update variant prices
-  final List<SellLot> _sellLots = [
-    const SellLot(
-      name: 'Green Ice Lettuce',
-      unit: '/kg',
-      assetPath: 'assets/green_ice.jpg',
-      status: 'Open',
-      variants: [
-        VariantPrice(
-          id: 1,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.organic,
-          price: 55.0,
-          stockKg: 20.0,
-        ),
-        VariantPrice(
-          id: 2,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 48.0,
-          stockKg: 40.0,
-        ),
-        VariantPrice(
-          id: 3,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.organic,
-          price: 62.0,
-          stockKg: 10.0,
-        ),
-        VariantPrice(
-          id: 4,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 52.0,
-          stockKg: 30.0,
-        ),
-      ],
-    ),
-    const SellLot(
-      name: 'Iceberg Lettuce',
-      unit: '/kg',
-      assetPath: 'assets/iceberg.jpg',
-      status: 'Partially filled',
-      variants: [
-        VariantPrice(
-          id: 5,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.organic,
-          price: 45.0,
-          stockKg: 15.0,
-        ),
-        VariantPrice(
-          id: 6,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 40.0,
-          stockKg: 25.0,
-        ),
-      ],
-    ),
-    // NEW: Romaine Lettuce sell lot
-    const SellLot(
-      name: 'Romaine Lettuce',
-      unit: '/kg',
-      assetPath: 'assets/romaine.jpg',
-      status: 'Open',
-      variants: [
-        VariantPrice(
-          id: 7,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.organic,
-          price: 50.0,
-          stockKg: 18.0,
-        ),
-        VariantPrice(
-          id: 8,
-          size: LettuceSize.small,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 42.0,
-          stockKg: 22.0,
-        ),
-        VariantPrice(
-          id: 9,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.organic,
-          price: 58.0,
-          stockKg: 12.0,
-        ),
-        VariantPrice(
-          id: 10,
-          size: LettuceSize.big,
-          variantType: LettuceVariantType.nonOrganic,
-          price: 48.0,
-          stockKg: 28.0,
-        ),
-      ],
-    ),
-  ];
+  List<StallInventoryItem> _inventory = [];
+  bool _loadingInventory = true;
+  String? _inventoryError;
 
-  // Saved buy requests per item (by name)
-  final Map<String, double> _buyRequests = {};
+  // Demands (buy requests)
+  List<Demand> _demands = [];
+  Map<int, Demand> _demandsByProductId = {};
+  bool _loadingDemands = true;
+  String? _demandsError;
+
+  // Saved buy requests per item (by productId)
+  final Map<int, double> _buyRequests = {};
 
   static const primaryGreen = GreenTheme.primary;
   static const softBg = GreenTheme.softBg;
@@ -163,17 +63,49 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
   Future<void> _load() async {
     try {
-      final p = await me().timeout(const Duration(seconds: 8));
+      final profile = await me().timeout(const Duration(seconds: 8));
+      final products = await fetchProducts();
+      final inventory = await fetchStallInventory();
+      final demands = await fetchDemands();
+
       if (!mounted) return;
       setState(() {
-        _profile = p ?? {};
+        _profile = profile ?? {};
         _error = null;
+
+        _products = products;
+        _loadingProducts = false;
+
+        _inventory = inventory;
+        _loadingInventory = false;
+        _inventoryError = null;
+
+        _demands = demands;
+        _demandsByProductId = {for (final d in demands) d.productId: d};
+        _buyRequests
+          ..clear()
+          ..addEntries(demands.map((d) => MapEntry(d.productId, d.weight)));
+        _loadingDemands = false;
+        _demandsError = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _profile = {};
-        _error = 'Could not load profile';
+        _profile ??= {};
+        _error ??= 'Could not load profile';
+
+        _products = [];
+        _loadingProducts = false;
+
+        _inventory = [];
+        _loadingInventory = false;
+        _inventoryError = 'Could not load inventory';
+
+        _demands = [];
+        _demandsByProductId = {};
+        _buyRequests.clear();
+        _loadingDemands = false;
+        _demandsError ??= 'Could not load demands';
       });
     }
   }
@@ -214,7 +146,335 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
     MaterialPageRoute(builder: (_) => const AccountPage()),
   );
 
-  // Reusable empty-state widget builder
+  // Derive image asset from product variant:
+  // "Green Ice" -> assets/green_ice.jpg
+  String _assetForVariant(String variant) {
+    final slug = variant.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    return 'assets/$slug.jpg';
+  }
+
+  /// Build MarketItem list for the Buy tab
+  /// - price  = product.currentPrice
+  /// - available = sum(stocks) from stall_inventory for that product
+  List<MarketItem> get _buyMarketItems {
+    if (_products.isEmpty) return [];
+
+    // Aggregate stocks by product_id
+    final Map<int, double> stockByProduct = {};
+    for (final inv in _inventory) {
+      stockByProduct.update(
+        inv.productId,
+        (prev) => prev + inv.stocks,
+        ifAbsent: () => inv.stocks,
+      );
+    }
+
+    final items = <MarketItem>[];
+
+    for (final p in _products) {
+      final name = '${p.variant} ${p.name}';
+      final price = p.currentPrice ?? 0.0;
+      final availableKg = stockByProduct[p.id] ?? 0.0;
+
+      items.add(
+        MarketItem(
+          productId: p.id,
+          name: name,
+          price: price,
+          unit: '/kg',
+          assetPath: _assetForVariant(p.variant),
+          available: availableKg.round(), // integer field
+        ),
+      );
+    }
+
+    items.sort((a, b) => a.name.compareTo(b.name));
+    return items;
+  }
+
+  /// Build SellLot list from stall_inventory rows.
+  /// Each lot corresponds to one product, with variants mapping size/type.
+  List<SellLot> get _sellLotsFromInventory {
+    if (_inventory.isEmpty) return [];
+
+    // Group inventory rows by product_id
+    final Map<int, List<StallInventoryItem>> byProduct = {};
+    for (final item in _inventory) {
+      byProduct.putIfAbsent(item.productId, () => []).add(item);
+    }
+
+    final lots = <SellLot>[];
+
+    byProduct.forEach((productId, items) {
+      if (items.isEmpty) return;
+
+      final first = items.first;
+      final name = '${first.productVariant} ${first.productName}';
+      final unit = '/kg';
+      final assetPath = _assetForVariant(first.productVariant);
+
+      final variants = items.map((item) {
+        // Map DB strings to enums
+        final sizeStr = item.size.toLowerCase();
+        final typeStr = item.type.toLowerCase();
+
+        final sizeEnum = sizeStr.startsWith('small')
+            ? LettuceSize.small
+            : LettuceSize.big;
+
+        final typeEnum = typeStr.startsWith('organic')
+            ? LettuceVariantType.organic
+            : LettuceVariantType.nonOrganic;
+
+        final price = item.variantPrice ?? item.currentPrice ?? 0.0;
+
+        return VariantPrice(
+          id: item.id, // use stall_inventory.id as variant id
+          size: sizeEnum,
+          variantType: typeEnum,
+          price: price,
+          stockKg: item.stocks,
+        );
+      }).toList();
+
+      lots.add(
+        SellLot(
+          name: name,
+          unit: unit,
+          assetPath: assetPath,
+          status: 'Open', // could be derived later
+          variants: variants,
+        ),
+      );
+    });
+
+    lots.sort((a, b) => a.name.compareTo(b.name));
+    return lots;
+  }
+
+  // ====== Add inventory dialog (same as before) ======
+
+  Future<void> _showAddInventoryDialog() async {
+    if (_products.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No products available to add.')),
+      );
+      return;
+    }
+
+    final typeOptions = <String>['Organic', 'Non-organic'];
+    final sizeOptions = <String>['Big', 'Small'];
+
+    final classController = TextEditingController();
+    final freshnessController = TextEditingController();
+    final stocksController = TextEditingController();
+
+    String? localError;
+    bool saving = false;
+
+    Product? selectedProduct;
+    String? selectedType;
+    String? selectedSize;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Add stock inventory'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<Product>(
+                      decoration: const InputDecoration(labelText: 'Product'),
+                      initialValue: selectedProduct,
+                      items: _products
+                          .map(
+                            (p) => DropdownMenuItem<Product>(
+                              value: p,
+                              child: Text('${p.variant} ${p.name}'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedProduct = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Type'),
+                      initialValue: selectedType,
+                      items: typeOptions
+                          .map(
+                            (t) => DropdownMenuItem<String>(
+                              value: t,
+                              child: Text(t),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedType = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Size'),
+                      initialValue: selectedSize,
+                      items: sizeOptions
+                          .map(
+                            (s) => DropdownMenuItem<String>(
+                              value: s,
+                              child: Text(s),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedSize = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: classController,
+                      decoration: const InputDecoration(
+                        labelText: 'Class',
+                        hintText: 'e.g., A, B, Premium',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: freshnessController,
+                      decoration: const InputDecoration(
+                        labelText: 'Freshness',
+                        hintText: 'e.g., Newly harvested, 1 day old',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: stocksController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Stocks (kg)',
+                      ),
+                    ),
+                    if (localError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        localError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving
+                      ? null
+                      : () => Navigator.of(ctx).pop<void>(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          final klass = classController.text.trim();
+                          final freshness = freshnessController.text.trim();
+                          final stocksText = stocksController.text.trim();
+
+                          if (selectedProduct == null ||
+                              selectedType == null ||
+                              selectedSize == null ||
+                              klass.isEmpty ||
+                              freshness.isEmpty ||
+                              stocksText.isEmpty) {
+                            setStateDialog(() {
+                              localError =
+                                  'Please fill in all fields and select product, type and size.';
+                            });
+                            return;
+                          }
+
+                          final stocks = double.tryParse(stocksText);
+                          if (stocks == null || stocks <= 0) {
+                            setStateDialog(() {
+                              localError =
+                                  'Enter a valid positive number for stocks.';
+                            });
+                            return;
+                          }
+
+                          setStateDialog(() {
+                            saving = true;
+                            localError = null;
+                          });
+
+                          try {
+                            final created = await createStallInventory(
+                              productId: selectedProduct!.id,
+                              stocks: stocks,
+                              size: selectedSize!,
+                              type: selectedType!,
+                              freshness: freshness,
+                              itemClass: klass,
+                            );
+
+                            if (!mounted) return;
+
+                            setState(() {
+                              _inventory = [..._inventory, created];
+                            });
+
+                            if (ctx.mounted) {
+                              Navigator.of(ctx).pop<void>();
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Stock added: ${created.displayName} '
+                                  '(${created.type}, ${created.size}, ${created.stocks} kg)',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!ctx.mounted) return;
+                            setStateDialog(() {
+                              saving = false;
+                              localError = 'Failed to save inventory: $e';
+                            });
+                          }
+                        },
+                  child: Text(saving ? 'Saving...' : 'Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _onAddInventory() {
+    if (_loadingProducts) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Products are still loading...')),
+      );
+      return;
+    }
+    _showAddInventoryDialog();
+  }
+
   Widget _buildEmptyState({
     required IconData icon,
     required String title,
@@ -240,19 +500,6 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
             ),
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _goHome,
-            icon: const Icon(Icons.storefront),
-            label: const Text('Go to Inventory'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            ),
-          ),
         ],
       ),
     );
@@ -260,7 +507,15 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final loading = _profile == null;
+    final loadingProfile = _profile == null;
+    final loading =
+        loadingProfile ||
+        _loadingProducts ||
+        _loadingInventory ||
+        _loadingDemands;
+
+    final marketItems = _buyMarketItems;
+    final sellLots = _sellLotsFromInventory;
 
     return Scaffold(
       backgroundColor: softBg,
@@ -290,6 +545,26 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                       ),
                     ),
                   ),
+                if (_inventoryError != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Text(
+                        _inventoryError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                if (_demandsError != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Text(
+                        _demandsError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                  ),
 
                 OrdersHeaderSliver(dateText: _niceNow()),
 
@@ -298,102 +573,146 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                   onTabChanged: (idx) => setState(() => _tabIndex = idx),
                 ),
 
-                // Content based on tab + whether there is data
+                // BUY TAB
                 if (_tabIndex == 0)
-                  (_marketItems.isEmpty
+                  (marketItems.isEmpty
                       ? SliverFillRemaining(
                           hasScrollBody: false,
                           child: _buildEmptyState(
                             icon: Icons.shopping_basket_outlined,
                             title: 'No products can be requested yet',
                             message:
-                                'Add items to inventory to buy products from farmers.',
+                                'Add items to inventory so you can manage requests from farmers.',
                           ),
                         )
                       : BuyTabSliver(
-                          items: _marketItems,
+                          items: marketItems,
                           buyRequests: _buyRequests,
-                          onSaveRequest: (name, value) {
-                            setState(() {
-                              _buyRequests[name] = value;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Saved request: ${value.toStringAsFixed(2)} kg of $name',
+                          onSaveRequest: (item, value) async {
+                            try {
+                              final demand = await createOrUpdateDemand(
+                                productId: item.productId,
+                                weight: value,
+                              );
+
+                              if (!mounted) return;
+                              setState(() {
+                                _buyRequests[item.productId] = demand.weight;
+                                _demandsByProductId[item.productId] = demand;
+
+                                final idx = _demands.indexWhere(
+                                  (d) => d.id == demand.id,
+                                );
+                                if (idx == -1) {
+                                  _demands.add(demand);
+                                } else {
+                                  _demands[idx] = demand;
+                                }
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Saved request: ${value.toStringAsFixed(2)} kg of ${item.name}',
+                                  ),
+                                  duration: const Duration(seconds: 2),
                                 ),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to save request: $e'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          onDeleteRequest: (item) async {
+                            final demand = _demandsByProductId[item.productId];
+                            if (demand == null) return;
+
+                            try {
+                              await deleteDemand(demand.id);
+
+                              if (!mounted) return;
+                              setState(() {
+                                _buyRequests.remove(item.productId);
+                                _demandsByProductId.remove(item.productId);
+                                _demands.removeWhere((d) => d.id == demand.id);
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Deleted request for ${item.name}',
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to delete request: $e'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           },
                         ))
+                // SELL TAB
                 else
-                  (_sellLots.isEmpty
+                  (sellLots.isEmpty
                       ? SliverFillRemaining(
                           hasScrollBody: false,
                           child: _buildEmptyState(
                             icon: Icons.receipt_long_outlined,
                             title: 'Nothing to sell yet',
                             message:
-                                'Add products/stocks from your inventory so buyers can see your offers.',
+                                'Add stocks to your inventory so buyers can see your offers.',
                           ),
                         )
                       : SellTabSliver(
-                          items: _sellLots,
+                          items: sellLots,
                           onUpdateVariantPrice: (lot, variant, newPrice) {
-                            setState(() {
-                              final lotIndex = _sellLots.indexOf(lot);
-                              if (lotIndex == -1) return;
+                            // We treat variant.id as stall_inventory.id
+                            final invId = variant.id;
 
-                              final currentLot = _sellLots[lotIndex];
-
-                              // Update by (size, variantType) so we can handle missing combos
-                              final existingIndex = currentLot.variants
-                                  .indexWhere(
-                                    (v) =>
-                                        v.size == variant.size &&
-                                        v.variantType == variant.variantType,
-                                  );
-
-                              List<VariantPrice> updatedVariants =
-                                  List<VariantPrice>.from(currentLot.variants);
-
-                              if (existingIndex >= 0) {
-                                updatedVariants[existingIndex] =
-                                    updatedVariants[existingIndex].copyWith(
-                                      price: newPrice,
+                            updateStallInventory(id: invId, price: newPrice)
+                                .then((updated) {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    final idx = _inventory.indexWhere(
+                                      (it) => it.id == updated.id,
                                     );
-                              } else {
-                                final newId = currentLot.variants.isEmpty
-                                    ? 1
-                                    : currentLot.variants.last.id + 1;
+                                    if (idx != -1) {
+                                      _inventory[idx] = updated;
+                                    }
+                                  });
 
-                                updatedVariants.add(
-                                  VariantPrice(
-                                    id: newId,
-                                    size: variant.size,
-                                    variantType: variant.variantType,
-                                    price: newPrice,
-                                    stockKg: 0.0,
-                                  ),
-                                );
-                              }
-
-                              _sellLots[lotIndex] = currentLot.copyWith(
-                                variants: updatedVariants,
-                              );
-                            });
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Updated ${lot.name} '
-                                  '(${variant.size.label}, ${variant.variantType.label}) '
-                                  'to ₱${newPrice.toStringAsFixed(2)} ${lot.unit}',
-                                ),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Updated ${lot.name} '
+                                        '(${variant.size.label}, ${variant.variantType.label}) '
+                                        'to ₱${newPrice.toStringAsFixed(2)} ${lot.unit}',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                })
+                                .catchError((e) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to update price: $e',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                });
                           },
                         )),
               ],
@@ -408,6 +727,16 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
         onMiddle: _goMiddle,
         onAccount: _goAccount,
       ),
+
+      // FAB only on SELL tab
+      floatingActionButton: _tabIndex == 1
+          ? FloatingActionButton(
+              onPressed: _onAddInventory,
+              backgroundColor: primaryGreen,
+              child: const Icon(Icons.add),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
