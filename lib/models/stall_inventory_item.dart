@@ -2,6 +2,7 @@ class StallInventoryItem {
   final int id;
   final int productId;
   final int stallId;
+  final String stallName; // <--- NEW
   final String productName;
   final String productVariant;
   final double? currentPrice;
@@ -17,6 +18,7 @@ class StallInventoryItem {
     required this.id,
     required this.productId,
     required this.stallId,
+    required this.stallName, // <--- NEW
     required this.productName,
     required this.productVariant,
     required this.currentPrice,
@@ -36,6 +38,7 @@ class StallInventoryItem {
       id: json['id'] as int,
       productId: json['product_id'] as int,
       stallId: json['stall_id'] as int,
+      stallName: json['stall_name'] as String, // <--- NEW
       productName: json['product_name'] as String,
       productVariant: json['product_variant'] as String,
       currentPrice: json['current_price'] == null

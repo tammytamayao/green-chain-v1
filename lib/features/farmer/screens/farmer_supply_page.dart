@@ -14,6 +14,9 @@ import '../widgets/payment_card.dart';
 import '../widgets/supply_button.dart';
 import 'farmer_home_page.dart';
 
+// NEW
+import '../../../api/supply_api.dart';
+
 class FarmerSupplyPage extends StatefulWidget {
   const FarmerSupplyPage({
     super.key,
@@ -22,6 +25,8 @@ class FarmerSupplyPage extends StatefulWidget {
     required this.currentDemandKg,
     required this.unitPricePerKg,
     required this.assetPath,
+    required this.productId, // NEW
+    required this.demandId, // NEW
   });
 
   final String produceName;
@@ -29,6 +34,8 @@ class FarmerSupplyPage extends StatefulWidget {
   final int currentDemandKg;
   final double unitPricePerKg;
   final String assetPath;
+  final int productId; // NEW
+  final int demandId; // NEW
 
   @override
   State<FarmerSupplyPage> createState() => _FarmerSupplyPageState();
@@ -66,7 +73,7 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
   Future<void> _onSupply() async {
     if (!mounted) return;
 
-    final isConfirmed = cart.qtyKg >= 2; // your demo rule
+    final isConfirmed = cart.qtyKg >= 1; // your rule
 
     if (!isConfirmed) {
       await showRejectedBottomSheet(
@@ -77,9 +84,29 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
       return;
     }
 
+    // Call backend to create supply + request
+    final methodStr = paymentMethod == PaymentMethod.gcash ? 'gcash' : 'cash';
+
+    try {
+      await createSupplyAndRequest(
+        productId: widget.productId,
+        weight: cart.qtyKg.toDouble(),
+        demandId: widget.demandId,
+        price: cart.total,
+        method: methodStr,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create supply: $e')));
+      return;
+    }
+
     final arrivalText = arrivalTextPlus3Days();
     final noteBody = _noteBodyByPayment(cart.total);
 
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

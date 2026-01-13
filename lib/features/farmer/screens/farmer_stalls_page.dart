@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../api/auth_api.dart';
 import '../../../account_page.dart';
 
-// Adjust paths as needed:
 import '../../../ui/green_theme.dart';
 import '../../../widgets/banner_header.dart';
 import '../../../widgets/bottom_nav.dart';
 import 'farmer_home_page.dart';
 import 'farmer_supply_page.dart';
+
+// Use demand API + model
+import '../../../api/demand_api.dart';
+import '../../../models/demand.dart';
 
 class FarmerStallsPage extends StatefulWidget {
   const FarmerStallsPage({super.key});
@@ -24,43 +27,15 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
   Map<String, dynamic>? _profile; // null = loading
   String? _error;
 
-  final sections = <_ProduceDemand>[
-    const _ProduceDemand(
-      title: 'Green Ice Lettuce',
-      asset: 'assets/green_ice.jpg',
-      pricePerKg: 50,
-      stalls: [
-        _StallDemand('Stall A', 25),
-        _StallDemand('Stall B', 36),
-        _StallDemand('Stall C', 48),
-      ],
-    ),
-    const _ProduceDemand(
-      title: 'Iceberg Lettuce',
-      asset: 'assets/iceberg.jpg',
-      pricePerKg: 40,
-      stalls: [
-        _StallDemand('Stall A', 66),
-        _StallDemand('Stall B', 65),
-        _StallDemand('Stall C', 23),
-      ],
-    ),
-    const _ProduceDemand(
-      title: 'Romaine Lettuce',
-      asset: 'assets/romaine.jpg',
-      pricePerKg: 30,
-      stalls: [
-        _StallDemand('Stall A', 43),
-        _StallDemand('Stall B', 30),
-        _StallDemand('Stall C', 96),
-      ],
-    ),
-  ];
+  bool _demandLoading = true;
+  String? _demandError;
+  List<_ProduceDemand> _sections = [];
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadDemands();
   }
 
   Future<void> _loadProfile() async {
@@ -78,6 +53,90 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
         _error = 'Could not load profile';
       });
     }
+  }
+
+  Future<void> _loadDemands() async {
+    try {
+      final items = await fetchDemands().timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+
+      final sections = _buildSectionsFromDemands(items);
+
+      setState(() {
+        _demandLoading = false;
+        _demandError = null;
+        _sections = sections;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _demandLoading = false;
+        _demandError = 'Could not load stall demand';
+        _sections = [];
+      });
+    }
+  }
+
+  // Group demand rows by product and build UI model
+  List<_ProduceDemand> _buildSectionsFromDemands(List<Demand> items) {
+    final Map<String, List<Demand>> byProduct = {};
+
+    for (final item in items) {
+      final key = item.displayName.trim(); // "<variant> <name>"
+      byProduct.putIfAbsent(key, () => []).add(item);
+    }
+
+    final List<_ProduceDemand> list = [];
+
+    for (final entry in byProduct.entries) {
+      final productName = entry.key;
+      final productItems = entry.value;
+      final sample = productItems.first;
+
+      final pricePerKg = sample.currentPrice ?? 0.0;
+
+      final stalls = productItems
+          .map(
+            (item) => _StallDemand(
+              stall: item.stallName, // real stall name from backend
+              kg: item.weight.toInt(), // demand in kg
+              productId: item.productId, // for supply API
+              demandId: item.id, // link to this specific demand
+            ),
+          )
+          .toList();
+
+      list.add(
+        _ProduceDemand(
+          title: productName,
+          asset: _assetForProduct(sample),
+          pricePerKg: pricePerKg,
+          stalls: stalls,
+        ),
+      );
+    }
+
+    // Sort by title for stable order
+    list.sort((a, b) => a.title.compareTo(b.title));
+    return list;
+  }
+
+  // Simple mapping from product to image asset
+  String _assetForProduct(Demand item) {
+    final n = item.productName.toLowerCase();
+    final v = item.productVariant.toLowerCase();
+    final combined = '$v $n';
+
+    if (combined.contains('green ice')) {
+      return 'assets/green_ice.jpg';
+    } else if (combined.contains('iceberg')) {
+      return 'assets/iceberg.jpg';
+    } else if (combined.contains('romaine')) {
+      return 'assets/romaine.jpg';
+    }
+
+    // default / fallback image
+    return 'assets/romaine.jpg';
   }
 
   String _niceNow() {
@@ -114,14 +173,14 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final loading = _profile == null;
+    final loading = _profile == null || _demandLoading;
 
     return Scaffold(
       backgroundColor: FarmerStallsPage.softBg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            const BannerHeaderSliver(), // <— banner header here
+            const BannerHeaderSliver(),
 
             if (loading)
               const SliverFillRemaining(
@@ -139,6 +198,17 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: Text(
                       _error!,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    ),
+                  ),
+                ),
+
+              if (_demandError != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: Text(
+                      _demandError!,
                       style: const TextStyle(color: Colors.red, fontSize: 13),
                     ),
                   ),
@@ -178,10 +248,10 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 sliver: SliverList.separated(
-                  itemCount: sections.length,
+                  itemCount: _sections.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 18),
                   itemBuilder: (context, i) =>
-                      _DemandSection(data: sections[i]),
+                      _DemandSection(data: _sections[i]),
                 ),
               ),
             ],
@@ -190,9 +260,9 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
       ),
       bottomNavigationBar: BottomNav(
         role: UserRole.farmer,
-        current: AppTab.middle, // ✅ highlight "Stalls" as the active tab
+        current: AppTab.middle, // highlight "Stalls"
         onHome: _goHome,
-        onMiddle: _goStalls, // middle = Stalls for farmers
+        onMiddle: _goStalls,
         onAccount: _goAccount,
       ),
     );
@@ -216,9 +286,17 @@ class _ProduceDemand {
 }
 
 class _StallDemand {
-  const _StallDemand(this.stall, this.kg);
+  const _StallDemand({
+    required this.stall,
+    required this.kg,
+    required this.productId,
+    required this.demandId,
+  });
+
   final String stall;
   final int kg;
+  final int productId;
+  final int demandId;
 }
 
 /* ==================== WIDGETS ==================== */
@@ -285,6 +363,8 @@ class _DemandSection extends StatelessWidget {
                                 currentDemandKg: s.kg,
                                 unitPricePerKg: data.pricePerKg,
                                 assetPath: data.asset,
+                                productId: s.productId,
+                                demandId: s.demandId,
                               ),
                             ),
                           );
