@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../auth_api.dart';
+import '../../../api/auth_api.dart';
 import '../../../account_page.dart';
 
 // Adjust paths as needed:

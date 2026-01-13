@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../auth_api.dart';
+import '../../api/auth_api.dart';
 
 // Shared UI
 import '../../ui/green_theme.dart';

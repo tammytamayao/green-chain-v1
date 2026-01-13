@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:green_chain_v1/models/product.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:green_chain_v1/auth_api.dart' show apiBase, getToken;
+import 'package:green_chain_v1/api/auth_api.dart' show apiBase, getToken;
 
 Uri _u(String p) => Uri.parse('$apiBase$p');
 

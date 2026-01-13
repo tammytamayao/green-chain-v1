@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'auth_api.dart';
+import 'api/auth_api.dart';
 import 'ui/green_theme.dart'; // <-- adjust path if different
 
 class RegisterPage extends StatefulWidget {
