@@ -1,34 +1,8 @@
-// lib/features/admin/admin_api.dart
 import 'dart:convert';
+import 'package:green_chain_v1/models/product.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:green_chain_v1/auth_api.dart' show apiBase, getToken;
-
-/// Simple Product model
-class Product {
-  final int id;
-  final String name;
-  final String variant;
-  double? currentPrice;
-
-  Product({
-    required this.id,
-    required this.name,
-    required this.variant,
-    this.currentPrice,
-  });
-
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      variant: json['variant'] as String,
-      currentPrice: json['current_price'] == null
-          ? null
-          : (json['current_price'] as num).toDouble(),
-    );
-  }
-}
 
 Uri _u(String p) => Uri.parse('$apiBase$p');
 
