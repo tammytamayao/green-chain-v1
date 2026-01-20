@@ -1,32 +1,22 @@
 // lib/api/stall_inventory_api.dart
-import 'dart:convert';
-import 'package:green_chain_v1/api/auth_api.dart';
-import 'package:http/http.dart' as http;
+
+import 'package:green_chain_v1/api/api_client.dart';
 import 'package:green_chain_v1/models/stall_inventory_item.dart';
 
-Uri _u(String p) => Uri.parse('$apiBase$p');
-
+/// GET /stall_inventory
 Future<List<StallInventoryItem>> fetchStallInventory() async {
-  final token = await getToken();
-  if (token == null) {
-    throw Exception('Not authenticated');
-  }
-
-  final r = await http.get(
-    _u('/stall_inventory'),
-    headers: {'Authorization': 'Bearer $token'},
+  return apiClient.getJson<List<StallInventoryItem>>(
+    '/stall_inventory',
+    parser: (json) {
+      final list = json as List<dynamic>;
+      return list
+          .map((e) => StallInventoryItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+    },
   );
-
-  if (r.statusCode != 200) {
-    throw Exception('Failed to load inventory: ${r.body}');
-  }
-
-  final data = jsonDecode(r.body) as List<dynamic>;
-  return data
-      .map((e) => StallInventoryItem.fromJson(e as Map<String, dynamic>))
-      .toList();
 }
 
+/// POST /stall_inventory
 Future<StallInventoryItem> createStallInventory({
   required int productId,
   required double stocks,
@@ -35,11 +25,6 @@ Future<StallInventoryItem> createStallInventory({
   required String freshness,
   required String itemClass,
 }) async {
-  final token = await getToken();
-  if (token == null) {
-    throw Exception('Not authenticated');
-  }
-
   final body = <String, dynamic>{
     'product_id': productId,
     'stocks': stocks,
@@ -49,23 +34,14 @@ Future<StallInventoryItem> createStallInventory({
     'class': itemClass,
   };
 
-  final r = await http.post(
-    _u('/stall_inventory'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode(body),
+  return apiClient.postJson<StallInventoryItem>(
+    '/stall_inventory',
+    body: body,
+    parser: (json) => StallInventoryItem.fromJson(json as Map<String, dynamic>),
   );
-
-  if (r.statusCode != 201) {
-    throw Exception('Failed to create inventory: ${r.body}');
-  }
-
-  final data = jsonDecode(r.body) as Map<String, dynamic>;
-  return StallInventoryItem.fromJson(data);
 }
 
+/// PATCH /stall_inventory/:id
 Future<StallInventoryItem> updateStallInventory({
   required int id,
   double? stocks,
@@ -73,14 +49,10 @@ Future<StallInventoryItem> updateStallInventory({
   String? type,
   String? freshness,
   String? itemClass,
-  double? price, // <--- NEW
+  double? price, // optional
 }) async {
-  final token = await getToken();
-  if (token == null) {
-    throw Exception('Not authenticated');
-  }
-
   final body = <String, dynamic>{};
+
   if (stocks != null) body['stocks'] = stocks;
   if (size != null) body['size'] = size;
   if (type != null) body['type'] = type;
@@ -88,35 +60,14 @@ Future<StallInventoryItem> updateStallInventory({
   if (itemClass != null) body['class'] = itemClass;
   if (price != null) body['price'] = price;
 
-  final r = await http.patch(
-    _u('/stall_inventory/$id'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode(body),
+  return apiClient.patchJson<StallInventoryItem>(
+    '/stall_inventory/$id',
+    body: body,
+    parser: (json) => StallInventoryItem.fromJson(json as Map<String, dynamic>),
   );
-
-  if (r.statusCode != 200) {
-    throw Exception('Failed to update inventory: ${r.body}');
-  }
-
-  final data = jsonDecode(r.body) as Map<String, dynamic>;
-  return StallInventoryItem.fromJson(data);
 }
 
+/// DELETE /stall_inventory/:id
 Future<void> deleteStallInventory(int id) async {
-  final token = await getToken();
-  if (token == null) {
-    throw Exception('Not authenticated');
-  }
-
-  final r = await http.delete(
-    _u('/stall_inventory/$id'),
-    headers: {'Authorization': 'Bearer $token'},
-  );
-
-  if (r.statusCode != 204) {
-    throw Exception('Failed to delete inventory: ${r.body}');
-  }
+  await apiClient.delete('/stall_inventory/$id', expectedStatus: 204);
 }

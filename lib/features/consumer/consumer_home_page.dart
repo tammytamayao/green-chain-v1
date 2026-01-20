@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../api/auth_api.dart';
-import '../../../account_page.dart';
 
+import '../../api/auth_api.dart';
+import '../../api/stall_inventory_api.dart';
+import '../../models/stall_inventory_item.dart';
+
+import '../../../account_page.dart';
 import '../../../ui/green_theme.dart';
 import '../../../widgets/banner_header.dart';
 import '../../../widgets/bottom_nav.dart';
@@ -16,33 +19,11 @@ class ConsumerHomePage extends StatefulWidget {
 
 class _ConsumerHomePageState extends State<ConsumerHomePage> {
   Map<String, dynamic>? _profile;
-  String? _error;
+  String? _profileError;
 
-  /// For now this is static placeholder data.
-  /// Later, you can wire this to your backend prices API and compute min/max.
-  final List<Map<String, dynamic>> _items = const [
-    {
-      'name': 'Green Ice Lettuce',
-      'min_price': 45.00,
-      'max_price': 55.00,
-      'unit': '/kg',
-      'asset': 'assets/green_ice.jpg',
-    },
-    {
-      'name': 'Iceberg Lettuce',
-      'min_price': 35.00,
-      'max_price': 45.00,
-      'unit': '/kg',
-      'asset': 'assets/iceberg.jpg',
-    },
-    {
-      'name': 'Romaine Lettuce',
-      'min_price': 28.00,
-      'max_price': 38.00,
-      'unit': '/kg',
-      'asset': 'assets/romaine.jpg',
-    },
-  ];
+  bool _inventoryLoading = true;
+  String? _inventoryError;
+  List<_ConsumerProductSummary> _products = const [];
 
   static const primaryGreen = GreenTheme.primary;
   static const chipGreen = Color(0xFF4F7652);
@@ -51,25 +32,128 @@ class _ConsumerHomePageState extends State<ConsumerHomePage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _load(); // load profile + inventory
   }
 
-  Future<void> _load() async {
+  /* ==================== DATA LOADING ==================== */
+
+  Future<void> _loadProfile() async {
     try {
       final p = await me().timeout(const Duration(seconds: 8));
       if (!mounted) return;
       setState(() {
-        _profile = p ?? {};
-        _error = null;
+        _profile = p ?? <String, dynamic>{};
+        _profileError = null;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _profile = {};
-        _error = 'Could not load profile';
+        _profile = <String, dynamic>{};
+        _profileError = 'Could not load profile';
       });
     }
   }
+
+  Future<void> _loadInventory() async {
+    try {
+      final items = await fetchStallInventory().timeout(
+        const Duration(seconds: 8),
+      );
+      if (!mounted) return;
+
+      final products = _buildProductSummaries(items);
+
+      setState(() {
+        _inventoryLoading = false;
+        _inventoryError = null;
+        _products = products;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _inventoryLoading = false;
+        _inventoryError = 'Could not load available produce';
+        _products = const [];
+      });
+    }
+  }
+
+  /// Combined loader for pull-to-refresh.
+  Future<void> _load() async {
+    await Future.wait([_loadProfile(), _loadInventory()]);
+  }
+
+  /// Group stall inventory rows by product display name and compute
+  /// min/max price per product.
+  List<_ConsumerProductSummary> _buildProductSummaries(
+    List<StallInventoryItem> items,
+  ) {
+    final Map<String, List<StallInventoryItem>> byProduct = {};
+
+    for (final item in items) {
+      final key = item.displayName.trim();
+      if (key.isEmpty) continue;
+      byProduct.putIfAbsent(key, () => <StallInventoryItem>[]).add(item);
+    }
+
+    final List<_ConsumerProductSummary> out = [];
+
+    for (final entry in byProduct.entries) {
+      final productName = entry.key;
+      final productItems = entry.value;
+
+      // Take variantPrice if present, else currentPrice
+      final prices = <double>[];
+      for (final it in productItems) {
+        final p = it.variantPrice ?? it.currentPrice;
+        if (p != null) prices.add(p);
+      }
+
+      if (prices.isEmpty) {
+        // No usable price for this product, skip
+        continue;
+      }
+
+      double minPrice = prices.first;
+      double maxPrice = prices.first;
+      for (final p in prices.skip(1)) {
+        if (p < minPrice) minPrice = p;
+        if (p > maxPrice) maxPrice = p;
+      }
+
+      final assetPath = _assetForProductName(productName);
+
+      out.add(
+        _ConsumerProductSummary(
+          name: productName,
+          minPrice: minPrice,
+          maxPrice: maxPrice,
+          unit: '/kg', // you can adjust later if you support other units
+          assetPath: assetPath,
+        ),
+      );
+    }
+
+    // Sort alphabetically by product name
+    out.sort((a, b) => a.name.compareTo(b.name));
+    return out;
+  }
+
+  /// Map product name to an image asset.
+  String _assetForProductName(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('green ice')) {
+      return 'assets/green_ice.jpg';
+    } else if (lower.contains('iceberg')) {
+      return 'assets/iceberg.jpg';
+    } else if (lower.contains('romaine')) {
+      return 'assets/romaine.jpg';
+    }
+    // fallback
+    return 'assets/romaine.jpg';
+  }
+
+  /* ==================== UTIL & NAV ==================== */
 
   String _niceNow() {
     final now = DateTime.now();
@@ -97,7 +181,6 @@ class _ConsumerHomePageState extends State<ConsumerHomePage> {
     // already here
   }
 
-  // For now reuse FarmerStallsPage as a "Browse stalls" placeholder.
   void _goBrowse() => Navigator.pushReplacement(
     context,
     MaterialPageRoute(builder: (_) => const ConsumerOrdersPage()),
@@ -115,9 +198,12 @@ class _ConsumerHomePageState extends State<ConsumerHomePage> {
     );
   }
 
+  /* ==================== BUILD ==================== */
+
   @override
   Widget build(BuildContext context) {
-    final loading = _profile == null;
+    final bool isProfileLoading = _profile == null;
+    final bool loading = isProfileLoading || _inventoryLoading;
 
     return Scaffold(
       backgroundColor: softBg,
@@ -137,12 +223,23 @@ class _ConsumerHomePageState extends State<ConsumerHomePage> {
                   ),
                 )
               else ...[
-                if (_error != null)
+                if (_profileError != null)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                       child: Text(
-                        _error!,
+                        _profileError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                  ),
+
+                if (_inventoryError != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Text(
+                        _inventoryError!,
                         style: const TextStyle(color: Colors.red, fontSize: 13),
                       ),
                     ),
@@ -176,24 +273,42 @@ class _ConsumerHomePageState extends State<ConsumerHomePage> {
                   ),
                 ),
 
-                // Produce list
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  sliver: SliverList.separated(
-                    itemCount: _items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) {
-                      final it = _items[i];
-                      return _ConsumerProduceCard(
-                        name: it['name'] as String,
-                        minPrice: (it['min_price'] as num).toDouble(),
-                        maxPrice: (it['max_price'] as num).toDouble(),
-                        unit: it['unit'] as String,
-                        assetPath: it['asset'] as String,
-                      );
-                    },
+                if (_products.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 40),
+                      child: Center(
+                        child: Text(
+                          'No produce available right now.\nPlease check again later!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  // Produce list from stall inventory
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    sliver: SliverList.separated(
+                      itemCount: _products.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final p = _products[i];
+                        return _ConsumerProduceCard(
+                          name: p.name,
+                          minPrice: p.minPrice,
+                          maxPrice: p.maxPrice,
+                          unit: p.unit,
+                          assetPath: p.assetPath,
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             ],
           ),
@@ -201,16 +316,36 @@ class _ConsumerHomePageState extends State<ConsumerHomePage> {
       ),
 
       bottomNavigationBar: BottomNav(
-        // if you later add UserRole.consumer, swap this
+        // TODO: if you add UserRole.consumer, use that instead of farmer
         role: UserRole.farmer,
         current: AppTab.home,
         onHome: _goHome,
-        onMiddle: _goBrowse, // middle = browse stalls for now
+        onMiddle: _goBrowse, // middle = browse stalls/orders
         onAccount: _goAccount,
       ),
     );
   }
 }
+
+/* =============== INTERNAL VIEW MODEL =============== */
+
+class _ConsumerProductSummary {
+  const _ConsumerProductSummary({
+    required this.name,
+    required this.minPrice,
+    required this.maxPrice,
+    required this.unit,
+    required this.assetPath,
+  });
+
+  final String name;
+  final double minPrice;
+  final double maxPrice;
+  final String unit;
+  final String assetPath;
+}
+
+/* ==================== CARD WIDGET ==================== */
 
 class _ConsumerProduceCard extends StatelessWidget {
   const _ConsumerProduceCard({
