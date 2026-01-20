@@ -2,10 +2,11 @@ class Demand {
   final int id;
   final double weight;
   final int stallId;
-  final String stallName;
   final int productId;
   final String productName;
   final String productVariant;
+  final String stallName;
+  final String stallLocation;
   final double? currentPrice;
   final int requestsCount;
 
@@ -13,31 +14,50 @@ class Demand {
     required this.id,
     required this.weight,
     required this.stallId,
-    required this.stallName,
     required this.productId,
     required this.productName,
     required this.productVariant,
-    required this.currentPrice,
+    required this.stallName,
+    required this.stallLocation,
+    this.currentPrice,
     required this.requestsCount,
   });
 
-  String get displayName => '$productVariant $productName';
+  // 👇 ADD THIS
+  String get displayName {
+    // build "<variant> <name>"
+    final variant = productVariant.trim();
+    final name = productName.trim();
+    return variant.isEmpty ? name : '$variant $name';
+  }
 
   factory Demand.fromJson(Map<String, dynamic> json) {
     return Demand(
       id: json['id'] as int,
       weight: (json['weight'] as num).toDouble(),
       stallId: json['stall_id'] as int,
-      stallName: json['stall_name'] as String,
       productId: json['product_id'] as int,
       productName: json['product_name'] as String,
       productVariant: json['product_variant'] as String,
+      stallName: json['stall_name'] as String,
+      stallLocation: json['stall_location'] as String,
       currentPrice: json['current_price'] == null
           ? null
           : (json['current_price'] as num).toDouble(),
-      requestsCount: json['requests_count'] == null
-          ? 0
-          : (json['requests_count'] as num).toInt(),
+      requestsCount: (json['requests_count'] as num).toInt(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'weight': weight,
+    'stall_id': stallId,
+    'product_id': productId,
+    'product_name': productName,
+    'product_variant': productVariant,
+    'stall_name': stallName,
+    'stall_location': stallLocation,
+    'current_price': currentPrice,
+    'requests_count': requestsCount,
+  };
 }
