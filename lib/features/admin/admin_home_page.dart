@@ -183,12 +183,18 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   Future<void> _showAddProductDialog() async {
-    final nameController = TextEditingController();
-    final variantController = TextEditingController();
     final priceController = TextEditingController();
 
     String? localError;
     bool saving = false;
+
+    // Dropdown options
+    const productOptions = ['Lettuce'];
+    const variantOptions = ['Green Ice', 'Iceberg', 'Romaine'];
+
+    // Selected values
+    String? selectedProduct = productOptions.first;
+    String? selectedVariant = variantOptions.first;
 
     final Product? newProduct = await showDialog<Product>(
       context: context,
@@ -201,21 +207,38 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Product name',
-                      ),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedProduct,
+                      decoration: const InputDecoration(labelText: 'Product'),
+                      items: productOptions
+                          .map(
+                            (p) => DropdownMenuItem(value: p, child: Text(p)),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedProduct = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: variantController,
-                      decoration: const InputDecoration(
-                        labelText: 'Variant',
-                        hintText: 'e.g., Green Ice, Romaine',
-                      ),
+
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedVariant,
+                      decoration: const InputDecoration(labelText: 'Variant'),
+                      items: variantOptions
+                          .map(
+                            (v) => DropdownMenuItem(value: v, child: Text(v)),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setStateDialog(() {
+                          selectedVariant = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 12),
+
                     TextField(
                       controller: priceController,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -225,6 +248,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                         labelText: 'Initial price in PHP (₱)',
                       ),
                     ),
+
                     if (localError != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -246,14 +270,29 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   onPressed: saving
                       ? null
                       : () async {
-                          final name = nameController.text.trim();
-                          final variant = variantController.text.trim();
                           final priceText = priceController.text.trim();
 
-                          if (name.isEmpty || variant.isEmpty) {
+                          if (selectedProduct == null ||
+                              selectedVariant == null) {
                             setStateDialog(() {
                               localError =
-                                  'Please enter both product name and variant.';
+                                  'Please select both product and variant.';
+                            });
+                            return;
+                          }
+
+                          // 🛑 DUPLICATE CHECK: same name + variant already exists
+                          final alreadyExists = _products.any(
+                            (p) =>
+                                p.name.toLowerCase() ==
+                                    selectedProduct!.toLowerCase() &&
+                                p.variant.toLowerCase() ==
+                                    selectedVariant!.toLowerCase(),
+                          );
+
+                          if (alreadyExists) {
+                            setStateDialog(() {
+                              localError = 'This product already exists.';
                             });
                             return;
                           }
@@ -277,8 +316,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
                           try {
                             final created = await createProduct(
-                              name: name,
-                              variant: variant,
+                              name: selectedProduct!,
+                              variant: selectedVariant!,
                               currentPrice: price,
                             );
                             if (!mounted) return;
