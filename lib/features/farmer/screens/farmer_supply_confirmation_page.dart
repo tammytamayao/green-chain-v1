@@ -11,6 +11,7 @@ class SupplyConfirmationPage extends StatelessWidget {
     required this.suppliedKg,
     required this.arrivalText,
     required this.pickupLocation,
+    required this.deliveryLocation, // 👈 NEW
     required this.noteTitle,
     required this.noteBody,
     required this.buttonText,
@@ -25,6 +26,7 @@ class SupplyConfirmationPage extends StatelessWidget {
 
   final String arrivalText;
   final String pickupLocation;
+  final String deliveryLocation; // 👈 NEW
 
   final String noteTitle;
   final String noteBody;
@@ -80,9 +82,15 @@ class SupplyConfirmationPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _InfoTile(
-                            icon: Icons.place,
-                            title: 'Pick-up Location',
+                            icon: Icons.agriculture, // farmer / pickup
+                            title: 'Pick-up Location (Farmer)',
                             value: pickupLocation,
+                          ),
+                          const SizedBox(height: 12),
+                          _InfoTile(
+                            icon: Icons.storefront, // stall / delivery
+                            title: 'Delivery Location (Stall)',
+                            value: deliveryLocation,
                           ),
                         ],
                       ),

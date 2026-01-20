@@ -4,7 +4,6 @@ import 'farmer_supply_confirmation_page.dart';
 import '../../../ui/green_theme.dart';
 import '../modals/rejected_bottom_sheet.dart';
 import '../models/cart_state.dart';
-import '../utils/cart_constants.dart';
 import '../utils/date_helpers.dart';
 import '../widgets/delivery_approach_card.dart';
 import '../widgets/demand_qty_card.dart';
@@ -22,20 +21,24 @@ class FarmerSupplyPage extends StatefulWidget {
     super.key,
     required this.produceName,
     required this.stallName,
+    required this.stallLocation,
     required this.currentDemandKg,
     required this.unitPricePerKg,
     required this.assetPath,
-    required this.productId, // NEW
-    required this.demandId, // NEW
+    required this.productId,
+    required this.demandId,
+    required this.farmerLocation, // 👈 NEW
   });
 
   final String produceName;
   final String stallName;
+  final String stallLocation;
   final int currentDemandKg;
   final double unitPricePerKg;
   final String assetPath;
-  final int productId; // NEW
-  final int demandId; // NEW
+  final int productId;
+  final int demandId;
+  final String farmerLocation; // 👈 NEW
 
   @override
   State<FarmerSupplyPage> createState() => _FarmerSupplyPageState();
@@ -47,7 +50,7 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
   DeliveryApproach deliveryApproach = DeliveryApproach.deliverRightAway;
   PaymentMethod paymentMethod = PaymentMethod.gcash;
 
-  bool _isSubmitting = false; // NEW
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -84,8 +87,7 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
     if (!mounted || _isSubmitting) return;
 
     // 1) Front-end rule: at least 1kg
-    final isConfirmed = cart.qtyKg >= 1;
-    if (!isConfirmed) {
+    if (cart.qtyKg < 1) {
       await _showRejected();
       return;
     }
@@ -105,13 +107,13 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
         price: cart.total,
         method: methodStr,
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
       });
 
-      // Backend failed (validation, mismatch, etc.) -> show same rejected modal
+      // Backend failed (validation, mismatch, etc.)
       await _showRejected();
       return;
     }
@@ -121,8 +123,6 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
 
     if (!mounted) return;
 
-    // We navigate away, so _isSubmitting state is less important here,
-    // but we can reset it for safety if user pops back.
     setState(() {
       _isSubmitting = false;
     });
@@ -136,7 +136,8 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
           demandKg: widget.currentDemandKg,
           suppliedKg: cart.qtyKg,
           arrivalText: arrivalText,
-          pickupLocation: CartConstants.farmerLocation,
+          pickupLocation: widget.farmerLocation, // ✅ real farmer location
+          deliveryLocation: widget.stallLocation, // ✅ real stall location
           noteTitle: 'Note:',
           noteBody: noteBody,
           buttonText: 'Back To Home',

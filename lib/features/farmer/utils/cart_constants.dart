@@ -6,7 +6,4 @@ class CartConstants {
 
   static const Color primaryGreen = GreenTheme.primary;
   static const Color chipGreen = Color(0xFF4F7652);
-
-  static const String farmerLocation =
-      'Barangay Fort Bonifacio (BGC),\nTaguig City, Metro Manila';
 }
