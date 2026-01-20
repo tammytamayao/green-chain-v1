@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../utils/cart_constants.dart';
+import '../../utils/farmer/cart_constants.dart';
 
 class CartHeader extends StatelessWidget {
   const CartHeader({

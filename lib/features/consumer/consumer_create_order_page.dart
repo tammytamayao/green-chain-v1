@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:green_chain_v1/ui/green_theme.dart';
 
 // Reuse farmer widgets for identical design
-import 'package:green_chain_v1/features/farmer/widgets/order_summary_card.dart';
-import 'package:green_chain_v1/features/farmer/widgets/payment_card.dart';
-import 'package:green_chain_v1/features/farmer/widgets/delivery_approach_card.dart';
-import 'package:green_chain_v1/features/farmer/utils/cart_constants.dart';
+import 'package:green_chain_v1/widgets/farmers/order_summary_card.dart';
+import 'package:green_chain_v1/widgets/farmers/payment_card.dart';
+import 'package:green_chain_v1/widgets/farmers/delivery_approach_card.dart';
+import 'package:green_chain_v1/utils/farmer/cart_constants.dart';
 
 // consumer confirmation + rejected sheet
 import 'package:green_chain_v1/features/consumer/consumer_order_confirmation_page.dart';

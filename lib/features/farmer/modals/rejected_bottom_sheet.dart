@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../utils/cart_constants.dart';
-import '../widgets/ui_helpers.dart';
+import '../../../utils/farmer/cart_constants.dart';
+import '../../../widgets/farmers/ui_helpers.dart';
 
 Future<void> showRejectedBottomSheet({
   required BuildContext context,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../utils/cart_constants.dart';
+import '../../utils/farmer/cart_constants.dart';
 
 class SupplyButton extends StatelessWidget {
   const SupplyButton({

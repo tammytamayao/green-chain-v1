@@ -1,6 +1,6 @@
 // lib/features/consumer/consumer_order_rejected_bottom_sheet.dart
 import 'package:flutter/material.dart';
-import 'package:green_chain_v1/features/farmer/utils/cart_constants.dart';
+import 'package:green_chain_v1/utils/farmer/cart_constants.dart';
 
 Future<void> showOrderRejectedBottomSheet({
   required BuildContext context,

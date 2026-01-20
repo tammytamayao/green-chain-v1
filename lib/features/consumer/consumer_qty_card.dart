@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../widgets/qty_card_base.dart';
-import '../farmer/utils/cart_constants.dart';
+import '../../utils/farmer/cart_constants.dart';
 
 class ConsumerQtyCard extends StatelessWidget {
   const ConsumerQtyCard({

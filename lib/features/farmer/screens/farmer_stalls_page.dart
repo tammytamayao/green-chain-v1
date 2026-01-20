@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/models/product_demand.dart';
+import 'package:green_chain_v1/models/stall_demand.dart';
 
 import 'package:green_chain_v1/utils/date_utils.dart';
 import 'package:green_chain_v1/api/auth_api.dart';
 import 'package:green_chain_v1/api/demand_api.dart';
 import 'package:green_chain_v1/models/demand.dart';
+import 'package:green_chain_v1/widgets/farmers/demand_section.dart';
 
 import '../../../account_page.dart';
 import '../../../ui/green_theme.dart';
@@ -29,7 +32,7 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
 
   bool _demandLoading = true;
   String? _demandError;
-  List<_ProductDemand> _sections = const [];
+  List<ProductDemand> _sections = const [];
 
   @override
   void initState() {
@@ -85,7 +88,7 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
   }
 
   /// Group demand rows by product (variant + name) and build UI model sections.
-  List<_ProductDemand> _buildSectionsFromDemands(List<Demand> items) {
+  List<ProductDemand> _buildSectionsFromDemands(List<Demand> items) {
     final Map<String, List<Demand>> byProduct = {};
 
     for (final item in items) {
@@ -93,7 +96,7 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
       byProduct.putIfAbsent(key, () => <Demand>[]).add(item);
     }
 
-    final List<_ProductDemand> list = [];
+    final List<ProductDemand> list = [];
 
     for (final entry in byProduct.entries) {
       final productName = entry.key;
@@ -104,18 +107,18 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
 
       final stalls = productItems
           .map(
-            (item) => _StallDemand(
+            (item) => StallDemand(
               stallName: item.stallName,
               kg: item.weight.toInt(),
               productId: item.productId,
               demandId: item.id,
-              stallLocation: item.stallLocation, // 👈 NEW
+              stallLocation: item.stallLocation,
             ),
           )
           .toList(growable: false);
 
       list.add(
-        _ProductDemand(
+        ProductDemand(
           title: productName,
           asset: _assetForProduct(sample),
           pricePerKg: pricePerKg,
@@ -143,7 +146,6 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
       return 'assets/romaine.jpg';
     }
 
-    // default / fallback image
     return 'assets/romaine.jpg';
   }
 
@@ -156,15 +158,43 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
     );
   }
 
-  void _goStalls() {
-    // already on this tab – no-op
-  }
+  void _goStalls() {}
 
   void _goAccount() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const AccountPage()),
     );
+  }
+
+  void _openSupplyPage({
+    required ProductDemand section,
+    required StallDemand stall,
+    required String farmerLocation,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FarmerSupplyPage(
+          produceName: section.title,
+          stallName: stall.stallName,
+          stallLocation: stall.stallLocation,
+          currentDemandKg: stall.kg,
+          unitPricePerKg: section.pricePerKg,
+          assetPath: section.asset,
+          productId: stall.productId,
+          demandId: stall.demandId,
+          farmerLocation: farmerLocation,
+        ),
+      ),
+    );
+  }
+
+  String _resolveFarmerLocation() {
+    final raw = _profile?['farm_location'] as String?;
+    if (raw == null) return 'Farmer location not set';
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? 'Farmer location not set' : trimmed;
   }
 
   /* ==================== BUILD ==================== */
@@ -269,17 +299,15 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
                     separatorBuilder: (_, __) => const SizedBox(height: 18),
                     itemBuilder: (context, index) {
                       final section = _sections[index];
-                      final farmerLocation =
-                          (_profile?['farm_location'] as String?)
-                                  ?.trim()
-                                  .isNotEmpty ==
-                              true
-                          ? (_profile!['farm_location'] as String).trim()
-                          : 'Farmer location not set';
+                      final farmerLocation = _resolveFarmerLocation();
 
-                      return _DemandSection(
+                      return DemandSection(
                         data: section,
-                        farmerLocation: farmerLocation, // ✅ pass in
+                        onTapStall: (stall) => _openSupplyPage(
+                          section: section,
+                          stall: stall,
+                          farmerLocation: farmerLocation,
+                        ),
                       );
                     },
                   ),
@@ -295,193 +323,6 @@ class _FarmerStallsPageState extends State<FarmerStallsPage> {
         onMiddle: _goStalls,
         onAccount: _goAccount,
       ),
-    );
-  }
-}
-
-/* ==================== INTERNAL VIEW MODELS ==================== */
-
-class _ProductDemand {
-  const _ProductDemand({
-    required this.title,
-    required this.asset,
-    required this.pricePerKg,
-    required this.stalls,
-  });
-
-  final String title;
-  final String asset;
-  final double pricePerKg;
-  final List<_StallDemand> stalls;
-}
-
-class _StallDemand {
-  const _StallDemand({
-    required this.stallName,
-    required this.kg,
-    required this.productId,
-    required this.demandId,
-    required this.stallLocation, // 👈 NEW
-  });
-
-  final String stallName;
-  final int kg;
-  final int productId;
-  final int demandId;
-  final String stallLocation; // 👈 NEW
-}
-
-/* ==================== WIDGETS ==================== */
-
-class _DemandSection extends StatelessWidget {
-  const _DemandSection({required this.data, required this.farmerLocation});
-
-  final _ProductDemand data;
-  final String farmerLocation;
-
-  @override
-  Widget build(BuildContext context) {
-    const primaryGreen = FarmerStallsPage.primaryGreen;
-    const chipBg = FarmerStallsPage.chipBg;
-
-    const titleStyle = TextStyle(
-      color: primaryGreen,
-      fontWeight: FontWeight.w700,
-      fontSize: 20,
-      letterSpacing: 0.2,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Product header (product name)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(
-              color: primaryGreen.withAlpha((0.25 * 255).round()),
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha((0.03 * 255).round()),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Center(child: Text(data.title, style: titleStyle)),
-        ),
-        const SizedBox(height: 12),
-
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Stalls + kg list
-            Expanded(
-              flex: 3,
-              child: Column(
-                children: [
-                  for (final stall in data.stalls)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FarmerSupplyPage(
-                                produceName: data.title,
-                                stallName: stall.stallName,
-                                stallLocation: stall.stallLocation,
-                                currentDemandKg: stall.kg,
-                                unitPricePerKg: data.pricePerKg,
-                                assetPath: data.asset,
-                                productId: stall.productId,
-                                demandId: stall.demandId,
-                                farmerLocation: farmerLocation,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          height: 40,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: chipBg,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(
-                                  (0.05 * 255).round(),
-                                ),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              '${stall.stallName}: ${stall.kg}kg',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Circular image preview (product picture)
-            Expanded(
-              flex: 2,
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(
-                      color: primaryGreen.withAlpha((0.25 * 255).round()),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha((0.04 * 255).round()),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: ClipOval(
-                      child: Image.asset(
-                        data.asset,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/romaine.jpg',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

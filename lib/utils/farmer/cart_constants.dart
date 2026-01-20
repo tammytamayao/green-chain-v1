@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../ui/green_theme.dart';
+import '../../ui/green_theme.dart';
 
 class CartConstants {
   static const double deliveryCharge = 20.0;

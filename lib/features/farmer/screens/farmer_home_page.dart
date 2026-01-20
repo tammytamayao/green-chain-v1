@@ -3,7 +3,7 @@ import 'package:green_chain_v1/api/product_api.dart';
 import 'package:green_chain_v1/models/product.dart';
 import '../../../api/auth_api.dart';
 import '../../../widgets/current_price.dart';
-import '../widgets/farmer_product_card.dart';
+import '../../../widgets/farmers/farmer_product_card.dart';
 import 'farmer_stalls_page.dart';
 import '../../../account_page.dart';
 

@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/utils/farmer/build_payment_note.dart';
+import 'package:green_chain_v1/utils/farmer/date_helpers.dart';
+import 'package:green_chain_v1/utils/farmer/payment_method_to_api.dart';
 
 import 'farmer_supply_confirmation_page.dart';
 import '../../../ui/green_theme.dart';
 import '../modals/rejected_bottom_sheet.dart';
 import '../models/cart_state.dart';
-import '../utils/date_helpers.dart';
-import '../widgets/delivery_approach_card.dart';
-import '../widgets/demand_qty_card.dart';
-import '../widgets/header.dart';
-import '../widgets/order_summary_card.dart';
-import '../widgets/payment_card.dart';
-import '../widgets/supply_button.dart';
+import '../../../widgets/farmers/delivery_approach_card.dart';
+import '../../../widgets/farmers/demand_qty_card.dart';
+import '../../../widgets/farmers/header.dart';
+import '../../../widgets/farmers/order_summary_card.dart';
+import '../../../widgets/farmers/payment_card.dart';
+import '../../../widgets/farmers/supply_button.dart';
 import 'farmer_home_page.dart';
 
-// NEW
+// API
 import '../../../api/supply_api.dart';
 
 class FarmerSupplyPage extends StatefulWidget {
@@ -27,7 +29,7 @@ class FarmerSupplyPage extends StatefulWidget {
     required this.assetPath,
     required this.productId,
     required this.demandId,
-    required this.farmerLocation, // 👈 NEW
+    required this.farmerLocation,
   });
 
   final String produceName;
@@ -38,7 +40,7 @@ class FarmerSupplyPage extends StatefulWidget {
   final String assetPath;
   final int productId;
   final int demandId;
-  final String farmerLocation; // 👈 NEW
+  final String farmerLocation;
 
   @override
   State<FarmerSupplyPage> createState() => _FarmerSupplyPageState();
@@ -64,17 +66,6 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
     unitPricePerKg: widget.unitPricePerKg,
   );
 
-  String _noteBodyByPayment(double total) {
-    switch (paymentMethod) {
-      case PaymentMethod.cash:
-        return 'Collect payment in cash: ₱${total.toStringAsFixed(2)}\n'
-            'Please be there on time!';
-      case PaymentMethod.gcash:
-        return 'Payment via GCash: ₱${total.toStringAsFixed(2)}\n'
-            'Please confirm once delivered.';
-    }
-  }
-
   Future<void> _showRejected() async {
     await showRejectedBottomSheet(
       context: context,
@@ -86,14 +77,13 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
   Future<void> _onSupply() async {
     if (!mounted || _isSubmitting) return;
 
-    // 1) Front-end rule: at least 1kg
+    // Front-end rule: at least 1kg
     if (cart.qtyKg < 1) {
       await _showRejected();
       return;
     }
 
-    // 2) Call backend to create supply + request
-    final methodStr = paymentMethod == PaymentMethod.gcash ? 'gcash' : 'cash';
+    final methodStr = paymentMethodToApi(paymentMethod);
 
     setState(() {
       _isSubmitting = true;
@@ -119,7 +109,7 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
     }
 
     final arrivalText = arrivalTextPlus3Days();
-    final noteBody = _noteBodyByPayment(cart.total);
+    final noteBody = buildPaymentNote(paymentMethod, cart.total);
 
     if (!mounted) return;
 
@@ -136,8 +126,8 @@ class _FarmerSupplyPageState extends State<FarmerSupplyPage> {
           demandKg: widget.currentDemandKg,
           suppliedKg: cart.qtyKg,
           arrivalText: arrivalText,
-          pickupLocation: widget.farmerLocation, // ✅ real farmer location
-          deliveryLocation: widget.stallLocation, // ✅ real stall location
+          pickupLocation: widget.farmerLocation, // real farmer location
+          deliveryLocation: widget.stallLocation, // real stall location
           noteTitle: 'Note:',
           noteBody: noteBody,
           buttonText: 'Back To Home',

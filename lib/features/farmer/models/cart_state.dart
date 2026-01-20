@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../utils/cart_constants.dart';
+import '../../../utils/farmer/cart_constants.dart';
 
 @immutable
 class CartState {

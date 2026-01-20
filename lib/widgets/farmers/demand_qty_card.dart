@@ -1,8 +1,8 @@
 // lib/features/cart/widgets/demand_qty_card.dart
 import 'package:flutter/material.dart';
 
-import '../../../widgets/qty_card_base.dart';
-import '../utils/cart_constants.dart';
+import '../qty_card_base.dart';
+import '../../utils/farmer/cart_constants.dart';
 
 class DemandQtyCard extends StatelessWidget {
   const DemandQtyCard({

@@ -1,8 +1,8 @@
 // lib/features/cart/widgets/qty_card_base.dart
 import 'package:flutter/material.dart';
 
-import '../features/farmer/utils/cart_constants.dart';
-import '../features/farmer/widgets/ui_helpers.dart';
+import '../utils/farmer/cart_constants.dart';
+import 'farmers/ui_helpers.dart';
 
 class QtyCardBase extends StatelessWidget {
   const QtyCardBase({

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/cart_constants.dart';
+import '../../utils/farmer/cart_constants.dart';
 import 'ui_helpers.dart';
 
 class OrderSummaryCard extends StatelessWidget {
