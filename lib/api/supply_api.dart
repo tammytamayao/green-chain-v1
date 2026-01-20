@@ -1,42 +1,40 @@
 // lib/api/supply_api.dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:green_chain_v1/api/auth_api.dart';
 
-Uri _u(String p) => Uri.parse('$apiBase$p');
+import 'package:green_chain_v1/api/api_client.dart';
+import 'package:green_chain_v1/models/supply_request.dart';
 
-Future<Map<String, dynamic>> createSupplyAndRequest({
+/// POST /supplies
+/// Body:
+/// {
+///   "product_id": ...,
+///   "weight": ...,
+///   "demand_id": ...,
+///   "price": ...,
+///   "method": "gcash" | "cash"
+/// }
+///
+/// Response:
+/// {
+///   "supply": {...},
+///   "request": { id, price, method, status, supply_id, demand_id, farm: {...}, stall: {...} }
+/// }
+Future<SupplyAndRequestResponse> createSupplyAndRequest({
   required int productId,
   required double weight,
   required int demandId,
   required double price,
   required String method, // "gcash" or "cash"
-}) async {
-  final token = await getToken();
-  if (token == null) {
-    throw Exception('Not authenticated');
-  }
-
-  final body = <String, dynamic>{
-    'product_id': productId,
-    'weight': weight,
-    'demand_id': demandId,
-    'price': price,
-    'method': method,
-  };
-
-  final r = await http.post(
-    _u('/supplies'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
+}) {
+  return apiClient.postJson<SupplyAndRequestResponse>(
+    '/supplies',
+    body: {
+      'product_id': productId,
+      'weight': weight,
+      'demand_id': demandId,
+      'price': price,
+      'method': method,
     },
-    body: jsonEncode(body),
+    parser: (json) =>
+        SupplyAndRequestResponse.fromJson(json as Map<String, dynamic>),
   );
-
-  if (r.statusCode != 201) {
-    throw Exception('Failed to create supply/request: ${r.body}');
-  }
-
-  return jsonDecode(r.body) as Map<String, dynamic>;
 }
