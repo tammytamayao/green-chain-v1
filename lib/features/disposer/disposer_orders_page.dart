@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/widgets/process_request_dialog.dart';
 import '../../api/auth_api.dart';
 import '../../../account_page.dart';
 
@@ -20,7 +21,7 @@ import 'package:green_chain_v1/api/stall_inventory_api.dart'
     show fetchStallInventory, updateStallInventory, createStallInventory;
 import 'package:green_chain_v1/models/demand.dart';
 import 'package:green_chain_v1/api/demand_api.dart'
-    show fetchDemands, createOrUpdateDemand, deleteDemand;
+    show fetchDemands, createOrUpdateDemand, deleteDemand, completeDemand;
 
 class DisposerOrdersPage extends StatefulWidget {
   const DisposerOrdersPage({super.key});
@@ -82,9 +83,14 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
         _demands = demands;
         _demandsByProductId = {for (final d in demands) d.productId: d};
+
         _buyRequests
           ..clear()
-          ..addEntries(demands.map((d) => MapEntry(d.productId, d.weight)));
+          ..addEntries(
+            // later you can filter out completed demands here if backend adds status
+            demands.map((d) => MapEntry(d.productId, d.weight)),
+          );
+
         _loadingDemands = false;
         _demandsError = null;
       });
@@ -252,7 +258,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
     return lots;
   }
 
-  // ====== Add inventory dialog (same as before) ======
+  // ====== Add inventory dialog ======
 
   Future<void> _showAddInventoryDialog() async {
     if (_products.isEmpty) {
@@ -475,6 +481,129 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
     _showAddInventoryDialog();
   }
 
+  StallInventoryItem? _findInventoryItem({
+    required int productId,
+    required String size,
+    required String type,
+  }) {
+    final sizeLc = size.toLowerCase();
+    final typeLc = type.toLowerCase();
+
+    for (final inv in _inventory) {
+      if (inv.productId == productId &&
+          inv.size.toLowerCase() == sizeLc &&
+          inv.type.toLowerCase() == typeLc) {
+        return inv;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _handleProcessRequest(MarketItem item) async {
+    // Get requested weight for this product
+    final requestedWeight = _buyRequests[item.productId] ?? 0;
+    if (requestedWeight <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No request weight set for this item.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Open the separate dialog (scrollable, height-limited)
+    final splits = await showProcessRequestDialog(
+      context: context,
+      item: item,
+      requestedWeight: requestedWeight,
+    );
+
+    // User cancelled
+    if (splits == null || splits.isEmpty) return;
+
+    try {
+      final List<StallInventoryItem> updatedOrCreated = [];
+
+      for (final split in splits) {
+        final existing = _findInventoryItem(
+          productId: item.productId,
+          size: split.size,
+          type: split.type,
+        );
+
+        if (existing != null) {
+          // update stocks
+          final updated = await updateStallInventory(
+            id: existing.id,
+            stocks: existing.stocks + split.weight,
+          );
+          updatedOrCreated.add(updated);
+        } else {
+          // create new row
+          final created = await createStallInventory(
+            productId: item.productId,
+            stocks: split.weight,
+            size: split.size,
+            type: split.type,
+            // you can adjust these defaults if needed
+            freshness: '90',
+            itemClass: 'A',
+          );
+          updatedOrCreated.add(created);
+        }
+      }
+
+      // 👉 Find the demand tied to this product
+      final demand = _demandsByProductId[item.productId];
+
+      // 👉 Mark its requests as completed + remove demand on backend
+      if (demand != null) {
+        await completeDemand(demand.id);
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        // merge updated/created into _inventory
+        for (final it in updatedOrCreated) {
+          final idx = _inventory.indexWhere((e) => e.id == it.id);
+          if (idx == -1) {
+            _inventory.add(it);
+          } else {
+            _inventory[idx] = it;
+          }
+        }
+
+        // Clear active request so UI goes back to "Request" button
+        _buyRequests.remove(item.productId);
+
+        // Remove from local demands so this item is no longer "processing"
+        if (demand != null) {
+          _demandsByProductId.remove(item.productId);
+          _demands.removeWhere((d) => d.id == demand.id);
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Processed request for ${item.name} into stall inventory.',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to process request: $e'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Widget _buildEmptyState({
     required IconData icon,
     required String title,
@@ -591,7 +720,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                       : BuyTabSliver(
                           items: marketItems,
                           buyRequests: _buyRequests,
-                          processingByProductId: processingByProductId, // NEW
+                          processingByProductId: processingByProductId,
                           onSaveRequest: (item, value) async {
                             try {
                               final demand = await createOrUpdateDemand(
@@ -664,6 +793,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                               );
                             }
                           },
+                          onProcessRequest: _handleProcessRequest,
                         ))
                 // SELL TAB
                 else
@@ -732,7 +862,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
         onAccount: _goAccount,
       ),
 
-      // FAB only on SELL tab
+      // ✅ FAB only on SELL tab (tabIndex == 1), like your original code
       floatingActionButton: _tabIndex == 1
           ? FloatingActionButton(
               onPressed: _onAddInventory,

@@ -8,17 +8,26 @@ class BuyCard extends StatelessWidget {
     required this.item,
     required this.initialRequest,
     required this.hasRequest,
-    required this.isProcessing, // NEW
+    required this.isProcessing,
     required this.onSave,
     this.onDelete,
+    this.onProcess,
+    this.status,
   });
 
   final MarketItem item;
   final double? initialRequest;
   final bool hasRequest;
-  final bool isProcessing; // NEW
+  final bool isProcessing;
   final ValueChanged<double> onSave;
   final VoidCallback? onDelete;
+
+  /// Triggered when disposer taps "Process".
+  /// The parent (page) will show a dialog and handle inventory updates.
+  final VoidCallback? onProcess;
+
+  /// Simple status string: e.g. "Processing", "Completed"
+  final String? status;
 
   void _openRequestDialog(BuildContext context) {
     // If already processing, don't allow editing/creating
@@ -59,7 +68,6 @@ class BuyCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Lettuce type as title
                   Text(
                     item.name,
                     style: const TextStyle(
@@ -69,8 +77,6 @@ class BuyCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-
-                  // Price | Current stock
                   Row(
                     children: [
                       Expanded(
@@ -125,8 +131,6 @@ class BuyCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 18),
-
-                  // Request field
                   TextField(
                     controller: controller,
                     keyboardType: const TextInputType.numberWithOptions(
@@ -182,10 +186,17 @@ class BuyCard extends StatelessWidget {
     final bool hasPositiveRequest =
         hasRequest && initialRequest != null && initialRequest! > 0;
 
-    // Separate "amount" and "status" so status can reflect the DB status column.
     final String requestAmountText = hasPositiveRequest
         ? '${initialRequest!.toStringAsFixed(2)} kg'
         : 'None yet';
+
+    // For display: if request exists → "Processing", else show "Completed" if that's the last state.
+    String? statusToShow;
+    if (hasPositiveRequest && isProcessing && status == 'Processing') {
+      statusToShow = 'Processing';
+    } else if (!hasPositiveRequest && status == 'Completed') {
+      statusToShow = 'Completed';
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -203,7 +214,6 @@ class BuyCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // LEFT: big thumbnail
           SizedBox(
             width: 100,
             height: 100,
@@ -218,8 +228,6 @@ class BuyCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 18),
-
-          // RIGHT: info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,8 +255,6 @@ class BuyCard extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                 ),
                 const SizedBox(height: 4),
-
-                // Requested amount
                 Text(
                   'Requested: $requestAmountText',
                   style: TextStyle(
@@ -257,11 +263,24 @@ class BuyCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (statusToShow != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Status: $statusToShow',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: statusToShow == 'Completed'
+                          ? Colors.green.shade700
+                          : Colors.orange.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
                   child: !hasPositiveRequest
-                      // No request yet → show "Request" button
+                      // No request yet → Request button
                       ? ElevatedButton.icon(
                           onPressed: () => _openRequestDialog(context),
                           icon: const Icon(
@@ -289,42 +308,34 @@ class BuyCard extends StatelessWidget {
                           ),
                         )
                       : (isProcessing
-                            // Request exists AND has at least one supply/request row
-                            // → show "Processing" UI (no delete)
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
+                            // Processing → Process button
+                            ? ElevatedButton.icon(
+                                onPressed: onProcess,
+                                icon: const Icon(
+                                  Icons.playlist_add_check_outlined,
+                                  size: 18,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.orange.shade300,
+                                label: const Text(
+                                  'Process',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.hourglass_top,
-                                      size: 18,
-                                      color: Colors.orange.shade700,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Processing',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.orange.shade800,
-                                      ),
-                                    ),
-                                  ],
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 1.5,
                                 ),
                               )
-                            // Request exists but no active processing request
-                            // → allow delete
+                            // Not processing yet → allow delete
                             : OutlinedButton.icon(
                                 onPressed: onDelete,
                                 icon: const Icon(

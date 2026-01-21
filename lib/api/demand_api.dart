@@ -41,3 +41,12 @@ Future<Demand> updateDemand({required int id, required double weight}) {
 Future<void> deleteDemand(int id) {
   return apiClient.delete('/demands/$id', expectedStatus: 204);
 }
+
+/// POST /demands/:id/complete
+Future<void> completeDemand(int id) {
+  return apiClient.postJson<void>(
+    '/demands/$id/complete',
+    body: const {}, // body not needed, but postJson expects something
+    parser: (_) => null,
+  );
+}
