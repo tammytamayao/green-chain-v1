@@ -13,6 +13,7 @@ class StallInventoryItem {
   final String freshness;
   final String itemClass;
   final int ordersCount;
+  final String? stallLocation;
 
   StallInventoryItem({
     required this.id,
@@ -29,6 +30,7 @@ class StallInventoryItem {
     required this.freshness,
     required this.itemClass,
     required this.ordersCount,
+    this.stallLocation,
   });
 
   String get displayName => '$productVariant $productName';
@@ -38,7 +40,8 @@ class StallInventoryItem {
       id: json['id'] as int,
       productId: json['product_id'] as int,
       stallId: json['stall_id'] as int,
-      stallName: json['stall_name'] as String, // <--- NEW
+      stallName: json['stall_name'] as String,
+      stallLocation: json['stall_location'] as String?,
       productName: json['product_name'] as String,
       productVariant: json['product_variant'] as String,
       currentPrice: json['current_price'] == null

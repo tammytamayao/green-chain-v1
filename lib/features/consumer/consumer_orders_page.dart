@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/api/order_api.dart';
 import 'package:green_chain_v1/ui/green_theme.dart';
 import 'package:green_chain_v1/widgets/banner_header.dart';
 import 'package:green_chain_v1/widgets/bottom_nav.dart';
@@ -8,8 +9,17 @@ import 'package:green_chain_v1/features/consumer/consumer_home_page.dart';
 import 'product_selection.dart';
 import 'consumer_stall_offers_page.dart';
 
-class ConsumerOrdersPage extends StatelessWidget {
+class ConsumerOrdersPage extends StatefulWidget {
   const ConsumerOrdersPage({super.key});
+
+  @override
+  State<ConsumerOrdersPage> createState() => _ConsumerOrdersPageState();
+}
+
+class _ConsumerOrdersPageState extends State<ConsumerOrdersPage> {
+  bool _loading = true;
+  String? _error;
+  List<ConsumerOrder> _orders = [];
 
   String _niceNow() {
     final now = DateTime.now();
@@ -33,6 +43,35 @@ class ConsumerOrdersPage extends StatelessWidget {
     return '${m[now.month - 1]} ${now.day}, ${now.year} | $h:$mm $ampm';
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final orders = await fetchOrders();
+      if (!mounted) return;
+      setState(() {
+        _orders = orders;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Failed to load orders: $e';
+        _orders = [];
+      });
+    }
+  }
+
   void _goHome(BuildContext context) {
     Navigator.pushReplacement(
       context,
@@ -48,7 +87,7 @@ class ConsumerOrdersPage extends StatelessWidget {
   }
 
   Future<void> _addOrder(BuildContext context) async {
-    // Sample product list: in real app, fetch from backend
+    // TODO: Replace this with real products from backend (fetchProducts()).
     final products = [
       {'id': 1, 'name': 'Lettuce', 'variant': 'Green Ice'},
       {'id': 2, 'name': 'Lettuce', 'variant': 'Iceberg'},
@@ -74,7 +113,6 @@ class ConsumerOrdersPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Product dropdown
                     DropdownButtonFormField<int>(
                       decoration: const InputDecoration(labelText: 'Product'),
                       initialValue: selectedProductId,
@@ -92,17 +130,17 @@ class ConsumerOrdersPage extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // Size dropdown
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Size'),
                       initialValue: selectedSize,
-                      items: sizes.map((s) {
-                        return DropdownMenuItem<String>(
-                          value: s,
-                          child: Text(s),
-                        );
-                      }).toList(),
+                      items: sizes
+                          .map(
+                            (s) => DropdownMenuItem<String>(
+                              value: s,
+                              child: Text(s),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (v) {
                         setStateDialog(() {
                           selectedSize = v;
@@ -110,24 +148,23 @@ class ConsumerOrdersPage extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // Type dropdown
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Type'),
                       initialValue: selectedType,
-                      items: types.map((t) {
-                        return DropdownMenuItem<String>(
-                          value: t,
-                          child: Text(t),
-                        );
-                      }).toList(),
+                      items: types
+                          .map(
+                            (t) => DropdownMenuItem<String>(
+                              value: t,
+                              child: Text(t),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (v) {
                         setStateDialog(() {
                           selectedType = v;
                         });
                       },
                     ),
-
                     if (localError != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -178,9 +215,8 @@ class ConsumerOrdersPage extends StatelessWidget {
       },
     );
 
-    if (selection == null) return; // cancelled
+    if (selection == null) return;
 
-    // Navigate to stall offers page with that selection
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -191,130 +227,129 @@ class ConsumerOrdersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // For now, static sample orders
-    final List<Map<String, dynamic>> orders = [
-      {
-        'title': 'Green Ice Lettuce',
-        'subtitle': '2 kg from Stall #5',
-        'amount': 120.00,
-      },
-      {
-        'title': 'Romaine Lettuce',
-        'subtitle': '1.5 kg from Stall #3',
-        'amount': 90.00,
-      },
-      {
-        'title': 'Iceberg Lettuce',
-        'subtitle': '3 kg from Stall #2',
-        'amount': 150.00,
-      },
-      {
-        'title': 'Butterhead Lettuce',
-        'subtitle': '0.8 kg from Stall #1',
-        'amount': 50.00,
-      },
-    ];
+    final orders = _orders;
 
     return Scaffold(
       backgroundColor: GreenTheme.softBg,
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            const BannerHeaderSliver(),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'My Orders',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: GreenTheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _niceNow(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            if (orders.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.shopping_bag_outlined,
-                          size: 64,
-                          color: Colors.grey.shade400,
+        child: RefreshIndicator(
+          onRefresh: _loadOrders,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              const BannerHeaderSliver(),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'My Orders',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: GreenTheme.primary,
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No orders yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _niceNow(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
                         ),
-                        const SizedBox(height: 8),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 6),
                         Text(
-                          'You haven\'t placed any orders yet.\nTap the + button to create your first order.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
+                          _error!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                sliver: SliverList.separated(
-                  itemCount: orders.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    return _OrderCard(
-                      title: order['title'] as String,
-                      subtitle: order['subtitle'] as String,
-                      amount: order['amount'] as double,
-                    );
-                  },
-                ),
               ),
-          ],
+              if (_loading)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: CircularProgressIndicator(color: GreenTheme.primary),
+                  ),
+                )
+              else if (orders.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'No orders yet',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'You haven\'t placed any orders yet.\nTap the + button to create your first order.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  sliver: SliverList.separated(
+                    itemCount: orders.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final order = orders[index];
+                      final title = order.fullProductLabel;
+                      final qty = order.orderedKg;
+                      final subtitle = qty == null
+                          ? 'from ${order.stallName}'
+                          : '${qty.toStringAsFixed(1)} kg from ${order.stallName}';
+                      return _OrderCard(
+                        title: title,
+                        subtitle: subtitle,
+                        amount: order.amount,
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: GreenTheme.primary,
         onPressed: () => _addOrder(context),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
       bottomNavigationBar: BottomNav(
-        role: UserRole.farmer, // reuse visuals for now
+        role: UserRole.consumer, // 👈 consumer, not farmer
         current: AppTab.middle,
         onHome: () => _goHome(context),
         onMiddle: () {},
@@ -362,7 +397,6 @@ class _OrderCard extends StatelessWidget {
                   color: GreenTheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
-
                 child: const Icon(
                   Icons.receipt_long_outlined,
                   color: GreenTheme.primary,

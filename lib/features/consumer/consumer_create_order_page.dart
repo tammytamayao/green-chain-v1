@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/api/order_api.dart';
+import 'package:green_chain_v1/api/auth_api.dart' as auth_api; // 👈 NEW
 import 'package:green_chain_v1/ui/green_theme.dart';
 
 // Reuse farmer widgets for identical design
@@ -11,13 +13,13 @@ import 'package:green_chain_v1/utils/farmer/cart_constants.dart';
 import 'package:green_chain_v1/features/consumer/consumer_order_confirmation_page.dart';
 import 'package:green_chain_v1/features/consumer/consumer_order_rejected_bottom_sheet.dart';
 
-// Simple enum to represent backend result
-// (replace with your own model when wiring real API)
-enum OrderResult { accepted, rejected }
+// Payment mapping util (same as farmer)
+import 'package:green_chain_v1/utils/farmer/payment_method_to_api.dart';
 
 class ConsumerCreateOrderPage extends StatefulWidget {
   const ConsumerCreateOrderPage({
     super.key,
+    required this.stallInventoryId,
     required this.productLabel,
     required this.size,
     required this.type,
@@ -26,6 +28,8 @@ class ConsumerCreateOrderPage extends StatefulWidget {
     required this.unitPricePerKg,
     required this.maxStocksKg,
   });
+
+  final int stallInventoryId;
 
   final String productLabel;
   final String size;
@@ -43,9 +47,12 @@ class ConsumerCreateOrderPage extends StatefulWidget {
 class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
   int qtyKg = 1;
 
-  // Use your enums from DeliveryApproachCard / PaymentCard
   DeliveryApproach deliveryApproach = DeliveryApproach.deliverRightAway;
   PaymentMethod paymentMethod = PaymentMethod.gcash;
+
+  bool _isSubmitting = false;
+
+  String? _consumerAddress; // 👈 loaded from /me
 
   double get _subtotal => qtyKg * widget.unitPricePerKg;
   double get _deliveryFee => 20.0; // placeholder
@@ -56,6 +63,19 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
     super.initState();
     if (widget.maxStocksKg <= 0) {
       qtyKg = 0;
+    }
+    _loadConsumerInfo(); // 👈 fetch /me for address
+  }
+
+  Future<void> _loadConsumerInfo() async {
+    try {
+      final info = await auth_api.me();
+      if (!mounted) return;
+      setState(() {
+        _consumerAddress = info?['address'] as String?;
+      });
+    } catch (_) {
+      // If /me fails, just fall back to a generic label
     }
   }
 
@@ -100,20 +120,13 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
     }
   }
 
-  String get _deliveryLocation {
-    switch (deliveryApproach) {
-      case DeliveryApproach.deliverRightAway:
-        return 'BGC Taguig, Metro Manila';
-      case DeliveryApproach.helpDelivery:
-        return 'Coordinate with the stall for assisted delivery';
-    }
-  }
+  /// 👇 Pickup is from the stall
+  String get _pickupLocation => widget.stallLocation;
 
-  // TODO: replace this with real backend call
-  Future<OrderResult> _fakeCreateOrder() async {
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    // For now always accepted – you can switch this logic when hooking API.
-    return OrderResult.accepted;
+  /// 👇 Delivery is to the consumer address
+  String get _deliveryLocation {
+    // If address not loaded / not set, show a fallback
+    return _consumerAddress ?? 'No saved address yet';
   }
 
   Future<void> _placeOrder() async {
@@ -124,12 +137,32 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
       return;
     }
 
-    // Call backend here later. For now, use a fake result.
-    final result = await _fakeCreateOrder();
+    if (qtyKg > widget.maxStocksKg) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Requested quantity exceeds available stocks.'),
+        ),
+      );
+      return;
+    }
 
-    if (!mounted) return;
+    if (_isSubmitting) return;
 
-    if (result == OrderResult.accepted) {
+    final methodStr = paymentMethodToApi(paymentMethod); // "gcash" | "cash"
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await createOrder(
+        stallInventoryId: widget.stallInventoryId,
+        amount: _total,
+        method: methodStr,
+      );
+
+      if (!mounted) return;
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ConsumerOrderConfirmationPage(
@@ -138,19 +171,32 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
             qtyKg: qtyKg,
             totalAmount: _total,
             arrivalText: _arrivalText,
-            deliveryLocation: _deliveryLocation,
+            pickupLocation: _pickupLocation, // 👈 from stall
+            deliveryLocation: _deliveryLocation, // 👈 from consumer address
             deliveryApproachLabel: _deliveryApproachLabel,
             paymentMethodLabel: _paymentMethodLabel,
             buttonText: 'Back to Home',
           ),
         ),
       );
-    } else {
+    } catch (e) {
+      if (!mounted) return;
+
       await showOrderRejectedBottomSheet(
         context: context,
         productName: widget.productLabel,
         stallName: widget.stallName,
       );
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to place order: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -177,7 +223,6 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           children: [
-            // Header: product + stall
             _OrderHeader(
               productLabel: widget.productLabel,
               stallName: widget.stallName,
@@ -186,8 +231,6 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
               type: widget.type,
             ),
             const SizedBox(height: 10),
-
-            // Quantity selector – compact version
             _QuantityCard(
               qtyKg: qtyKg,
               maxStocksKg: maxQty,
@@ -196,8 +239,6 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
               onInc: _incQty,
             ),
             const SizedBox(height: 10),
-
-            // Order summary – using the shared OrderSummaryCard
             OrderSummaryCard(
               qtyKg: qtyKg,
               unitPricePerKg: widget.unitPricePerKg,
@@ -206,24 +247,18 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
               total: _total,
             ),
             const SizedBox(height: 12),
-
-            // Delivery approach – shared DeliveryApproachCard
             DeliveryApproachCard(
               value: deliveryApproach,
               onChanged: (v) => setState(() => deliveryApproach = v),
             ),
             const SizedBox(height: 10),
-
-            // Payment method – shared PaymentCard
             PaymentCard(
               value: paymentMethod,
               onChanged: (v) => setState(() => paymentMethod = v),
             ),
             const SizedBox(height: 14),
-
-            // Place order button – styled to match SupplyButton
             _PlaceOrderButton(
-              enabled: qtyKg > 0 && maxQty > 0,
+              enabled: !_isSubmitting && qtyKg > 0 && maxQty > 0,
               onPressed: _placeOrder,
             ),
           ],
@@ -256,7 +291,7 @@ class _OrderHeader extends StatelessWidget {
         Text(
           productLabel,
           style: const TextStyle(
-            fontSize: 18, // slightly smaller
+            fontSize: 18,
             fontWeight: FontWeight.w800,
             color: GreenTheme.primary,
           ),

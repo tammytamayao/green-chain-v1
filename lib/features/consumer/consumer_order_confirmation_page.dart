@@ -10,7 +10,8 @@ class ConsumerOrderConfirmationPage extends StatelessWidget {
     required this.qtyKg,
     required this.totalAmount,
     required this.arrivalText,
-    required this.deliveryLocation,
+    required this.pickupLocation, // 👈 NEW
+    required this.deliveryLocation, // 👈 CHANGED: now explicitly delivery
     required this.buttonText,
     this.deliveryApproachLabel,
     this.paymentMethodLabel,
@@ -23,7 +24,8 @@ class ConsumerOrderConfirmationPage extends StatelessWidget {
   final double totalAmount;
 
   final String arrivalText;
-  final String deliveryLocation;
+  final String pickupLocation; // 👈 from stall
+  final String deliveryLocation; // 👈 consumer address
 
   final String buttonText;
 
@@ -134,8 +136,14 @@ class ConsumerOrderConfirmationPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _InfoTileWithIcon(
-                            icon: Icons.place,
-                            title: 'Delivery / pick-up location',
+                            icon: Icons.storefront_outlined,
+                            title: 'Pick-up location (Stall)',
+                            value: pickupLocation,
+                          ),
+                          const SizedBox(height: 12),
+                          _InfoTileWithIcon(
+                            icon: Icons.home_outlined,
+                            title: 'Delivery location (Consumer)',
                             value: deliveryLocation,
                           ),
                         ],

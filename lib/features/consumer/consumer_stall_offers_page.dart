@@ -1,38 +1,70 @@
-// lib/features/consumer/consumer_stall_offers_page.dart
 import 'package:flutter/material.dart';
 import 'package:green_chain_v1/ui/green_theme.dart';
 
 import 'product_selection.dart';
 import 'consumer_create_order_page.dart';
 
-class ConsumerStallOffersPage extends StatelessWidget {
+// API + model
+import 'package:green_chain_v1/api/stall_inventory_api.dart'
+    show fetchStallInventory;
+import 'package:green_chain_v1/models/stall_inventory_item.dart';
+
+class ConsumerStallOffersPage extends StatefulWidget {
   const ConsumerStallOffersPage({super.key, required this.selection});
 
   final ProductSelection selection;
 
   @override
+  State<ConsumerStallOffersPage> createState() =>
+      _ConsumerStallOffersPageState();
+}
+
+class _ConsumerStallOffersPageState extends State<ConsumerStallOffersPage> {
+  bool _loading = true;
+  String? _error;
+  List<StallInventoryItem> _allInventory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final inv = await fetchStallInventory();
+      if (!mounted) return;
+      setState(() {
+        _allInventory = inv;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Failed to load stalls: $e';
+        _allInventory = [];
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // For now: sample stalls. Later, fetch from backend by productId/size/type.
-    final stalls = [
-      {
-        'name': 'Stall 5 - Fresh Greens',
-        'location': 'Section A • Row 2',
-        'price': 60.0,
-        'stocks': 25.0,
-      },
-      {
-        'name': 'Stall 3 - Lettuce Hub',
-        'location': 'Section B • Row 1',
-        'price': 58.0,
-        'stocks': 18.0,
-      },
-      {
-        'name': 'Stall 2 - Organic Corner',
-        'location': 'Section C • Row 4',
-        'price': 62.0,
-        'stocks': 30.0,
-      },
-    ];
+    final selection = widget.selection;
+
+    // Filter by selected product + size + type, and only stalls with stock
+    final filtered = _allInventory.where((item) {
+      final sameProduct = item.productId == selection.productId;
+      final sameSize = item.size.toLowerCase() == selection.size.toLowerCase();
+      final sameType = item.type.toLowerCase() == selection.type.toLowerCase();
+      final hasStock = item.stocks > 0;
+      return sameProduct && sameSize && sameType && hasStock;
+    }).toList();
 
     return Scaffold(
       backgroundColor: GreenTheme.softBg,
@@ -50,116 +82,137 @@ class ConsumerStallOffersPage extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            // Selected product header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      selection.productLabel,
-                      style: const TextStyle(
-                        fontSize: 24, // bigger
-                        fontWeight: FontWeight.w800,
-                        color: GreenTheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${selection.size} • ${selection.type}',
-                      style: TextStyle(
-                        fontSize: 16, // more prominent
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            if (stalls.isEmpty)
-              // Centered empty state (vertically & horizontally)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.storefront_outlined,
-                          size: 64,
-                          color: Colors.grey.shade400,
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selection.productLabel,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: GreenTheme.primary,
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No stalls available',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${selection.size} • ${selection.type}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
                         ),
-                        const SizedBox(height: 8),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 6),
                         Text(
-                          'There are currently no stalls offering this product\n'
-                          'with the selected size and type.\n\n'
-                          'You can try a different combination or check again later.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
+                          _error!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                sliver: SliverList.separated(
-                  itemCount: stalls.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final s = stalls[index];
-                    final name = s['name'] as String;
-                    final location = s['location'] as String;
-                    final price = s['price'] as double;
-                    final stocks = s['stocks'] as double;
-
-                    return _StallOfferCard(
-                      name: name,
-                      location: location,
-                      price: price,
-                      stocks: stocks,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ConsumerCreateOrderPage(
-                              productLabel: selection.productLabel,
-                              size: selection.size,
-                              type: selection.type,
-                              stallName: name,
-                              stallLocation: location,
-                              unitPricePerKg: price,
-                              maxStocksKg: stocks,
+              ),
+              if (_loading)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: CircularProgressIndicator(color: GreenTheme.primary),
+                  ),
+                )
+              else if (filtered.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.storefront_outlined,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'No stalls available',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
+                          const SizedBox(height: 8),
+                          Text(
+                            'There are currently no stalls offering this product\n'
+                            'with the selected size and type.\n\n'
+                            'You can try a different combination or check again later.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  sliver: SliverList.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final item = filtered[index];
+                      final stallName = item.stallName;
+                      // If your StallInventoryItem doesn't yet expose stallLocation,
+                      // add it to the model (mapped from "stall_location").
+                      final stallLocation = item.stallLocation ?? '';
+                      final price =
+                          item.variantPrice ?? item.currentPrice ?? 0.0;
+                      final stocks = item.stocks;
+
+                      return _StallOfferCard(
+                        name: stallName,
+                        location: stallLocation,
+                        price: price,
+                        stocks: stocks,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ConsumerCreateOrderPage(
+                                stallInventoryId: item.id, // 👈 key link
+                                productLabel: selection.productLabel,
+                                size: selection.size,
+                                type: selection.type,
+                                stallName: stallName,
+                                stallLocation: stallLocation,
+                                unitPricePerKg: price,
+                                maxStocksKg: stocks,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -206,7 +259,6 @@ class _StallOfferCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Stall name + price
                 Row(
                   children: [
                     Expanded(
@@ -229,7 +281,6 @@ class _StallOfferCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                // Location
                 Row(
                   children: [
                     const Icon(
@@ -240,7 +291,7 @@ class _StallOfferCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        location,
+                        location.isEmpty ? 'Market stall' : location,
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey.shade700,
@@ -250,9 +301,8 @@ class _StallOfferCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                // Stocks
                 Text(
-                  'Stocks: ${stocks.toStringAsFixed(1)} kg',
+                  'Available Stocks: ${stocks.toStringAsFixed(1)} kg',
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
                 ),
                 const SizedBox(height: 8),
