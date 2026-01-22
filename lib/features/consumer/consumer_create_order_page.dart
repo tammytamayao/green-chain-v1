@@ -159,6 +159,7 @@ class _ConsumerCreateOrderPageState extends State<ConsumerCreateOrderPage> {
         stallInventoryId: widget.stallInventoryId,
         amount: _total,
         method: methodStr,
+        weightKg: qtyKg.toDouble(), // ✅ NEW: backend expects "weight"
       );
 
       if (!mounted) return;

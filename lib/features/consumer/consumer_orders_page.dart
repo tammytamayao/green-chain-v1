@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:green_chain_v1/api/order_api.dart';
+import 'package:green_chain_v1/models/order.dart';
 import 'package:green_chain_v1/ui/green_theme.dart';
 import 'package:green_chain_v1/widgets/banner_header.dart';
 import 'package:green_chain_v1/widgets/bottom_nav.dart';
@@ -20,6 +21,9 @@ class _ConsumerOrdersPageState extends State<ConsumerOrdersPage> {
   bool _loading = true;
   String? _error;
   List<ConsumerOrder> _orders = [];
+
+  // ✅ track which orders are being "received"
+  final Set<int> _receivingIds = {};
 
   String _niceNow() {
     final now = DateTime.now();
@@ -69,6 +73,43 @@ class _ConsumerOrdersPageState extends State<ConsumerOrdersPage> {
         _error = 'Failed to load orders: $e';
         _orders = [];
       });
+    }
+  }
+
+  // ✅ mark order as received -> completed
+  Future<void> _receiveOrder(ConsumerOrder order) async {
+    final id = order.id;
+    if (_receivingIds.contains(id)) return;
+
+    setState(() {
+      _receivingIds.add(id);
+    });
+
+    try {
+      // ✅ uses your new endpoint PATCH /orders/<id>/receive
+      final updated = await receiveOrder(orderId: id);
+
+      if (!mounted) return;
+
+      setState(() {
+        final idx = _orders.indexWhere((o) => o.id == id);
+        if (idx != -1) _orders[idx] = updated;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Order marked as received')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to receive order: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _receivingIds.remove(id);
+        });
+      }
     }
   }
 
@@ -217,12 +258,15 @@ class _ConsumerOrdersPageState extends State<ConsumerOrdersPage> {
 
     if (selection == null) return;
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ConsumerStallOffersPage(selection: selection),
       ),
     );
+
+    // Refresh after returning from order flow
+    await _loadOrders();
   }
 
   @override
@@ -326,14 +370,22 @@ class _ConsumerOrdersPageState extends State<ConsumerOrdersPage> {
                     itemBuilder: (context, index) {
                       final order = orders[index];
                       final title = order.fullProductLabel;
-                      final qty = order.orderedKg;
-                      final subtitle = qty == null
-                          ? 'from ${order.stallName}'
-                          : '${qty.toStringAsFixed(1)} kg from ${order.stallName}';
+                      final qty = order.weight;
+                      final subtitle =
+                          '${qty.toStringAsFixed(1)} kg from ${order.stallName}';
+
+                      final showReceive = order.status == 'accepted';
+                      final receiving = _receivingIds.contains(order.id);
+
                       return _OrderCard(
                         title: title,
                         subtitle: subtitle,
                         amount: order.amount,
+                        statusLabel: order.statusLabel,
+                        statusRaw: order.status,
+                        showReceiveButton: showReceive,
+                        receiving: receiving,
+                        onReceive: () => _receiveOrder(order),
                       );
                     },
                   ),
@@ -349,7 +401,7 @@ class _ConsumerOrdersPageState extends State<ConsumerOrdersPage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: BottomNav(
-        role: UserRole.consumer, // 👈 consumer, not farmer
+        role: UserRole.consumer,
         current: AppTab.middle,
         onHome: () => _goHome(context),
         onMiddle: () {},
@@ -364,15 +416,45 @@ class _OrderCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.amount,
+    required this.statusLabel,
+    required this.statusRaw,
+    required this.showReceiveButton,
+    required this.receiving,
+    required this.onReceive,
   });
 
   final String title;
   final String subtitle;
   final double amount;
 
+  final String statusLabel;
+  final String statusRaw;
+
+  final bool showReceiveButton;
+  final bool receiving;
+  final VoidCallback onReceive;
+
+  Color _statusColor() {
+    switch (statusRaw) {
+      case 'processing':
+        return Colors.orange.shade700;
+      case 'accepted':
+        return Colors.blue.shade700;
+      case 'completed':
+        return Colors.green.shade700;
+      case 'rejected':
+      case 'cancelled':
+        return Colors.red.shade700;
+      default:
+        return Colors.grey.shade700;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(16);
+    final statusColor = _statusColor();
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: radius,
@@ -431,13 +513,71 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '₱${amount.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₱${amount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+
+                  // ✅ If accepted -> show Receive button. Otherwise -> show status pill.
+                  if (showReceiveButton)
+                    SizedBox(
+                      height: 30,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: GreenTheme.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        onPressed: receiving ? null : onReceive,
+                        child: receiving
+                            ? const SizedBox(
+                                height: 14,
+                                width: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Receive',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

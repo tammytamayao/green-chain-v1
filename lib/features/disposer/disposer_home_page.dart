@@ -6,6 +6,7 @@ import '../../../../../ui/green_theme.dart';
 import '../../../../../widgets/banner_header.dart';
 import '../../../../../widgets/bottom_nav.dart';
 import 'disposer_orders_page.dart';
+import 'disposer_process_orders_page.dart'; // 👈 NEW
 
 import 'package:green_chain_v1/models/product.dart';
 import 'package:green_chain_v1/api/product_api.dart' show fetchProducts;
@@ -107,6 +108,7 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
   }
 
   void _goMiddle() {
+    // 👇 still uses your EXISTING orders page
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const DisposerOrdersPage()),
@@ -286,18 +288,38 @@ class _DisposerHomePageState extends State<DisposerHomePage> {
           ),
         ),
       ),
+
+      // 👇 NEW: floating button for Process Orders
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: primaryGreen,
+        icon: const Icon(Icons.playlist_add_check, color: Colors.white),
+        label: const Text(
+          'Process orders',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const DisposerProcessOrdersPage(),
+            ),
+          );
+        },
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
       bottomNavigationBar: BottomNav(
         role: UserRole.disposer, // disposer role
         current: AppTab.home,
         onHome: _goHome,
-        onMiddle: _goMiddle,
+        onMiddle: _goMiddle, // existing orders page
         onAccount: _goAccount,
       ),
     );
   }
 }
 
-// === UI components: retained Disposer UI, only data changed ===
+// === UI components: retained Disposer UI ===
 
 class _InventoryCard extends StatelessWidget {
   const _InventoryCard({

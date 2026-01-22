@@ -1,9 +1,12 @@
-// lib/models/order.dart
-
 class ConsumerOrder {
   final int id;
   final double amount;
   final String method;
+  final String status; // processing, accepted, rejected, completed, cancelled
+
+  /// ✅ how many kg the consumer ordered (from backend `weight`)
+  final double weight;
+
   final int? deliveryId;
   final int stallInventoryId;
   final int consumerId;
@@ -31,6 +34,8 @@ class ConsumerOrder {
     required this.id,
     required this.amount,
     required this.method,
+    required this.status,
+    required this.weight, // 👈 renamed & required
     required this.deliveryId,
     required this.stallInventoryId,
     required this.consumerId,
@@ -54,9 +59,15 @@ class ConsumerOrder {
       id: json['id'] as int,
       amount: (json['amount'] as num).toDouble(),
       method: json['method'] as String,
+      status: (json['status'] as String?) ?? 'processing',
+
+      /// ✅ backend sends `weight`
+      weight: (json['weight'] as num).toDouble(),
+
       deliveryId: json['delivery_id'] as int?,
       stallInventoryId: json['stall_inventory_id'] as int,
       consumerId: json['consumer_id'] as int,
+
       stocks: (json['stocks'] as num).toDouble(),
       size: json['size'] as String,
       type: json['type'] as String,
@@ -65,15 +76,36 @@ class ConsumerOrder {
       variantPrice: json['variant_price'] == null
           ? null
           : (json['variant_price'] as num).toDouble(),
+
       productId: json['product_id'] as int,
       productName: json['product_name'] as String,
       productVariant: json['product_variant'] as String,
       currentPrice: json['current_price'] == null
           ? null
           : (json['current_price'] as num).toDouble(),
+
       stallId: json['stall_id'] as int,
       stallName: json['stall_name'] as String,
       stallLocation: json['stall_location'] as String,
     );
+  }
+
+  String get fullProductLabel => '$productVariant $productName';
+
+  String get statusLabel {
+    switch (status) {
+      case 'processing':
+        return 'Processing';
+      case 'accepted':
+        return 'Accepted';
+      case 'rejected':
+        return 'Rejected';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
   }
 }
