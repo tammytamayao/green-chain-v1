@@ -1,6 +1,7 @@
 class Demand {
   final int id;
   final double weight;
+  final String status;
   final int stallId;
   final int productId;
   final String productName;
@@ -13,6 +14,7 @@ class Demand {
   Demand({
     required this.id,
     required this.weight,
+    required this.status,
     required this.stallId,
     required this.productId,
     required this.productName,
@@ -23,18 +25,20 @@ class Demand {
     required this.requestsCount,
   });
 
-  // 👇 ADD THIS
   String get displayName {
-    // build "<variant> <name>"
     final variant = productVariant.trim();
     final name = productName.trim();
     return variant.isEmpty ? name : '$variant $name';
   }
 
+  bool get isOpen => status == 'open';
+  bool get isCompleted => status == 'completed';
+
   factory Demand.fromJson(Map<String, dynamic> json) {
     return Demand(
       id: json['id'] as int,
       weight: (json['weight'] as num).toDouble(),
+      status: (json['status'] as String?) ?? 'open',
       stallId: json['stall_id'] as int,
       productId: json['product_id'] as int,
       productName: json['product_name'] as String,
@@ -51,6 +55,7 @@ class Demand {
   Map<String, dynamic> toJson() => {
     'id': id,
     'weight': weight,
+    'status': status,
     'stall_id': stallId,
     'product_id': productId,
     'product_name': productName,

@@ -1,3 +1,12 @@
+// widget/buy_card.dart (modified)
+// Changes:
+// - Shows status label if provided (typically "Processing")
+// - Keeps same button logic:
+//     - if no request -> Request
+//     - else if processing -> Process
+//     - else -> Delete request
+// - After completion, disposer page clears _buyRequests so this card returns to Request again.
+
 import 'package:flutter/material.dart';
 import '../../../ui/green_theme.dart';
 import '../disposer_orders_model.dart';
@@ -22,15 +31,12 @@ class BuyCard extends StatelessWidget {
   final ValueChanged<double> onSave;
   final VoidCallback? onDelete;
 
-  /// Triggered when disposer taps "Process".
-  /// The parent (page) will show a dialog and handle inventory updates.
   final VoidCallback? onProcess;
 
-  /// Simple status string: e.g. "Processing", "Completed"
+  /// Simple status string: e.g. "Processing"
   final String? status;
 
   void _openRequestDialog(BuildContext context) {
-    // If already processing, don't allow editing/creating
     if (isProcessing) return;
 
     final controller = TextEditingController(
@@ -183,6 +189,7 @@ class BuyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(20);
+
     final bool hasPositiveRequest =
         hasRequest && initialRequest != null && initialRequest! > 0;
 
@@ -190,13 +197,7 @@ class BuyCard extends StatelessWidget {
         ? '${initialRequest!.toStringAsFixed(2)} kg'
         : 'None yet';
 
-    // For display: if request exists → "Processing", else show "Completed" if that's the last state.
-    String? statusToShow;
-    if (hasPositiveRequest && isProcessing && status == 'Processing') {
-      statusToShow = 'Processing';
-    } else if (!hasPositiveRequest && status == 'Completed') {
-      statusToShow = 'Completed';
-    }
+    final String? statusToShow = status; // usually "Processing"
 
     return Container(
       decoration: BoxDecoration(
@@ -269,9 +270,7 @@ class BuyCard extends StatelessWidget {
                     'Status: $statusToShow',
                     style: TextStyle(
                       fontSize: 13,
-                      color: statusToShow == 'Completed'
-                          ? Colors.green.shade700
-                          : Colors.orange.shade700,
+                      color: Colors.orange.shade700,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -280,7 +279,6 @@ class BuyCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: !hasPositiveRequest
-                      // No request yet → Request button
                       ? ElevatedButton.icon(
                           onPressed: () => _openRequestDialog(context),
                           icon: const Icon(
@@ -308,7 +306,6 @@ class BuyCard extends StatelessWidget {
                           ),
                         )
                       : (isProcessing
-                            // Processing → Process button
                             ? ElevatedButton.icon(
                                 onPressed: onProcess,
                                 icon: const Icon(
@@ -335,7 +332,6 @@ class BuyCard extends StatelessWidget {
                                   elevation: 1.5,
                                 ),
                               )
-                            // Not processing yet → allow delete
                             : OutlinedButton.icon(
                                 onPressed: onDelete,
                                 icon: const Icon(

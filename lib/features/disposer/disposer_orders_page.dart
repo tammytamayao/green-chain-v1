@@ -1,3 +1,9 @@
+// disposer_order_page.dart (modified)
+// Changes:
+// - Keep demands cache as OPEN-only (matches backend GET /demands which returns only open)
+// - After processing/completing, we DO NOT "delete" demand in DB — we just remove it from OPEN UI cache
+//   and clear _buyRequests so the card returns to "Request" again.
+
 import 'package:flutter/material.dart';
 import 'package:green_chain_v1/widgets/process_request_dialog.dart';
 import '../../api/auth_api.dart';
@@ -44,7 +50,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
   bool _loadingInventory = true;
   String? _inventoryError;
 
-  // Demands (buy requests)
+  // Demands (buy requests) — OPEN only cache
   List<Demand> _demands = [];
   Map<int, Demand> _demandsByProductId = {};
   bool _loadingDemands = true;
@@ -69,6 +75,9 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
       final inventory = await fetchStallInventory();
       final demands = await fetchDemands();
 
+      // Backend returns OPEN only already, but keep defensive filter.
+      final openDemands = demands.where((d) => d.isOpen).toList();
+
       if (!mounted) return;
       setState(() {
         _profile = profile ?? {};
@@ -81,15 +90,12 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
         _loadingInventory = false;
         _inventoryError = null;
 
-        _demands = demands;
-        _demandsByProductId = {for (final d in demands) d.productId: d};
+        _demands = openDemands;
+        _demandsByProductId = {for (final d in openDemands) d.productId: d};
 
         _buyRequests
           ..clear()
-          ..addEntries(
-            // later you can filter out completed demands here if backend adds status
-            demands.map((d) => MapEntry(d.productId, d.weight)),
-          );
+          ..addEntries(openDemands.map((d) => MapEntry(d.productId, d.weight)));
 
         _loadingDemands = false;
         _demandsError = null;
@@ -199,7 +205,6 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
   }
 
   /// Build SellLot list from stall_inventory rows.
-  /// Each lot corresponds to one product, with variants mapping size/type.
   List<SellLot> get _sellLotsFromInventory {
     if (_inventory.isEmpty) return [];
 
@@ -220,7 +225,6 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
       final assetPath = _assetForVariant(first.productVariant);
 
       final variants = items.map((item) {
-        // Map DB strings to enums
         final sizeStr = item.size.toLowerCase();
         final typeStr = item.type.toLowerCase();
 
@@ -235,7 +239,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
         final price = item.variantPrice ?? item.currentPrice ?? 0.0;
 
         return VariantPrice(
-          id: item.id, // use stall_inventory.id as variant id
+          id: item.id,
           size: sizeEnum,
           variantType: typeEnum,
           price: price,
@@ -248,7 +252,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
           name: name,
           unit: unit,
           assetPath: assetPath,
-          status: 'Open', // could be derived later
+          status: 'Open',
           variants: variants,
         ),
       );
@@ -440,9 +444,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                               _inventory = [..._inventory, created];
                             });
 
-                            if (ctx.mounted) {
-                              Navigator.of(ctx).pop<void>();
-                            }
+                            if (ctx.mounted) Navigator.of(ctx).pop<void>();
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -500,7 +502,6 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
   }
 
   Future<void> _handleProcessRequest(MarketItem item) async {
-    // Get requested weight for this product
     final requestedWeight = _buyRequests[item.productId] ?? 0;
     if (requestedWeight <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -512,14 +513,12 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
       return;
     }
 
-    // Open the separate dialog (scrollable, height-limited)
     final splits = await showProcessRequestDialog(
       context: context,
       item: item,
       requestedWeight: requestedWeight,
     );
 
-    // User cancelled
     if (splits == null || splits.isEmpty) return;
 
     try {
@@ -533,20 +532,17 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
         );
 
         if (existing != null) {
-          // update stocks
           final updated = await updateStallInventory(
             id: existing.id,
             stocks: existing.stocks + split.weight,
           );
           updatedOrCreated.add(updated);
         } else {
-          // create new row
           final created = await createStallInventory(
             productId: item.productId,
             stocks: split.weight,
             size: split.size,
             type: split.type,
-            // you can adjust these defaults if needed
             freshness: '90',
             itemClass: 'A',
           );
@@ -554,10 +550,9 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
         }
       }
 
-      // 👉 Find the demand tied to this product
       final demand = _demandsByProductId[item.productId];
 
-      // 👉 Mark its requests as completed + remove demand on backend
+      // Marks demand completed in DB (keeps history) + sets requests to completed
       if (demand != null) {
         await completeDemand(demand.id);
       }
@@ -565,7 +560,6 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
       if (!mounted) return;
 
       setState(() {
-        // merge updated/created into _inventory
         for (final it in updatedOrCreated) {
           final idx = _inventory.indexWhere((e) => e.id == it.id);
           if (idx == -1) {
@@ -575,10 +569,11 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
           }
         }
 
-        // Clear active request so UI goes back to "Request" button
+        // Reset UI back to "Request"
         _buyRequests.remove(item.productId);
 
-        // Remove from local demands so this item is no longer "processing"
+        // OPEN-only UI cache: once completed, remove from OPEN list/map.
+        // This is NOT deleting DB rows — it just removes it from open view.
         if (demand != null) {
           _demandsByProductId.remove(item.productId);
           _demands.removeWhere((d) => d.id == demand.id);
@@ -645,8 +640,10 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
 
     final marketItems = _buyMarketItems;
     final sellLots = _sellLotsFromInventory;
+
+    // processing means: open demand + has at least one request
     final Map<int, bool> processingByProductId = {
-      for (final d in _demands) d.productId: d.requestsCount > 0,
+      for (final d in _demands) d.productId: d.isOpen && d.requestsCount > 0,
     };
 
     return Scaffold(
@@ -658,7 +655,6 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               const BannerHeaderSliver(),
-
               if (loading)
                 const SliverFillRemaining(
                   hasScrollBody: false,
@@ -697,9 +693,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                       ),
                     ),
                   ),
-
                 OrdersHeaderSliver(dateText: _niceNow()),
-
                 OrdersSegmentSwitchSliver(
                   tabIndex: _tabIndex,
                   onTabChanged: (idx) => setState(() => _tabIndex = idx),
@@ -721,6 +715,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                           items: marketItems,
                           buyRequests: _buyRequests,
                           processingByProductId: processingByProductId,
+                          demandsByProductId: _demandsByProductId,
                           onSaveRequest: (item, value) async {
                             try {
                               final demand = await createOrUpdateDemand(
@@ -737,7 +732,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                                   (d) => d.id == demand.id,
                                 );
                                 if (idx == -1) {
-                                  _demands.add(demand);
+                                  if (demand.isOpen) _demands.add(demand);
                                 } else {
                                   _demands[idx] = demand;
                                 }
@@ -810,9 +805,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                       : SellTabSliver(
                           items: sellLots,
                           onUpdateVariantPrice: (lot, variant, newPrice) {
-                            // We treat variant.id as stall_inventory.id
                             final invId = variant.id;
-
                             updateStallInventory(id: invId, price: newPrice)
                                 .then((updated) {
                                   if (!mounted) return;
@@ -820,9 +813,7 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
                                     final idx = _inventory.indexWhere(
                                       (it) => it.id == updated.id,
                                     );
-                                    if (idx != -1) {
-                                      _inventory[idx] = updated;
-                                    }
+                                    if (idx != -1) _inventory[idx] = updated;
                                   });
 
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -861,8 +852,6 @@ class _DisposerOrdersPageState extends State<DisposerOrdersPage> {
         onMiddle: _goMiddle,
         onAccount: _goAccount,
       ),
-
-      // ✅ FAB only on SELL tab (tabIndex == 1), like your original code
       floatingActionButton: _tabIndex == 1
           ? FloatingActionButton(
               onPressed: _onAddInventory,

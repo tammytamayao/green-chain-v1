@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:green_chain_v1/api/delivery_api.dart';
+import 'package:green_chain_v1/features/driver/driver_home.dart';
 
 // Shared UI
 import '../../ui/green_theme.dart';
@@ -6,37 +8,45 @@ import '../../widgets/banner_header.dart';
 import '../../widgets/bottom_nav.dart';
 
 // Pages
-import 'driver_home.dart';
 import '../../account_page.dart';
 
 /// Public models used when driving
+/// ✅ Added: deliveryId + pricePhp so we can update status and show price.
 class PickupInfo {
   const PickupInfo({
-    required this.from,
+    required this.deliveryId,
+    required this.from, // origin
     required this.farmer,
     required this.weightKg,
-    required this.to,
+    required this.to, // destination
+    this.pricePhp,
   });
 
+  final int deliveryId;
   final String from;
   final String farmer;
   final int weightKg;
   final String to;
+  final double? pricePhp;
 }
 
 class DeliveryInfo {
   const DeliveryInfo({
-    required this.fromFarmer,
-    required this.toStall,
+    required this.deliveryId,
+    required this.origin,
+    required this.destination,
     required this.weightKg,
+    this.pricePhp,
   });
 
-  final String fromFarmer;
-  final String toStall;
+  final int deliveryId;
+  final String origin; // origin
+  final String destination; // destination
   final int weightKg;
+  final double? pricePhp;
 }
 
-class DriverDrivingPage extends StatelessWidget {
+class DriverDrivingPage extends StatefulWidget {
   const DriverDrivingPage({
     super.key,
     required this.currentLocation,
@@ -50,24 +60,102 @@ class DriverDrivingPage extends StatelessWidget {
   final List<PickupInfo> pickups;
   final List<DeliveryInfo> deliveries;
 
-  // String _vehicleLabel(Map<String, dynamic>? v) {
-  //   if (v == null) return 'No vehicle selected';
-  //   final model = (v['model'] ?? '').toString();
-  //   final klass = (v['class'] ?? '').toString();
-  //   final plate = (v['plate_number'] ?? '').toString();
-  //   final parts = [
-  //     model,
-  //     klass.isEmpty ? null : '($klass)',
-  //     plate.isEmpty ? null : plate,
-  //   ].whereType<String>().toList();
-  //   return parts.isEmpty ? 'Vehicle' : parts.join(' • ');
-  // }
+  @override
+  State<DriverDrivingPage> createState() => _DriverDrivingPageState();
+}
+
+class _DriverDrivingPageState extends State<DriverDrivingPage> {
+  int _index = 0;
+  bool _delivering = false;
+  String? _error;
+
+  bool get _hasItems => widget.deliveries.isNotEmpty;
+
+  DeliveryInfo? get _current {
+    if (!_hasItems) return null;
+    final i = _index.clamp(0, widget.deliveries.length - 1);
+    return widget.deliveries[i];
+  }
+
+  String _peso(double? p) {
+    if (p == null) return '-';
+    return '₱${p.toStringAsFixed(2)}';
+  }
+
+  Future<void> _markDelivered() async {
+    final cur = _current;
+    if (cur == null) {
+      // nothing to deliver; go home
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DriverHomePage()),
+      );
+      return;
+    }
+
+    setState(() {
+      _delivering = true;
+      _error = null;
+    });
+
+    try {
+      // ✅ Update backend status
+      await updateDeliveryStatus(
+        deliveryId: cur.deliveryId,
+        status: 'delivered',
+      );
+
+      if (!mounted) return;
+
+      // ✅ Next delivery if any, else go Home
+      final isLast = _index >= widget.deliveries.length - 1;
+      if (isLast) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DriverHomePage()),
+        );
+      } else {
+        setState(() {
+          _index += 1;
+          _delivering = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _delivering = false;
+        _error = 'Failed to mark delivered: $e';
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_error!)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // We still compute this in case you want it later, but we don't show it.
     final screenHeight = MediaQuery.of(context).size.height;
     final mapHeight = screenHeight * 0.5;
+
+    final cur = _current;
+    final origin = cur?.origin ?? 'Unknown origin';
+    final destination = cur?.destination ?? 'Unknown destination';
+    final weightKg = cur?.weightKg ?? 0;
+    final priceLabel = _peso(cur?.pricePhp);
+
+    // For overlay: use ORIGIN (pickup) and DESTINATION (delivery)
+    final pickupOrigins = <String>{
+      for (final p in widget.pickups) p.from, // ✅ origin
+    }.toList();
+
+    final deliveryDestinations = <String>{
+      for (final d in widget.deliveries) d.destination, // ✅ destination
+    }.toList();
+
+    final progressText = widget.deliveries.isEmpty
+        ? 'No active deliveries.'
+        : 'Delivery ${_index + 1} of ${widget.deliveries.length}';
 
     return Scaffold(
       backgroundColor: GreenTheme.softBg,
@@ -79,14 +167,14 @@ class DriverDrivingPage extends StatelessWidget {
                 slivers: [
                   const BannerHeaderSliver(),
 
-                  // Title bar
+                  // Title bar + progress
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             'DRIVING ROUTE',
                             style: TextStyle(
                               fontSize: 26,
@@ -95,15 +183,74 @@ class DriverDrivingPage extends StatelessWidget {
                               letterSpacing: 0.5,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            'You are now on an active trip.',
-                            style: TextStyle(
+                            widget.deliveries.isEmpty
+                                ? 'No active trip.'
+                                : 'You are now on an active trip.',
+                            style: const TextStyle(
                               fontSize: 13,
                               color: Colors.black54,
                             ),
                           ),
+                          const SizedBox(height: 6),
+                          _Pill(text: progressText, icon: Icons.flag_outlined),
+
+                          if (_error != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              _error!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ],
+                      ),
+                    ),
+                  ),
+
+                  // Current delivery details
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      child: _DetailCard(
+                        title: 'Current delivery',
+                        child: widget.deliveries.isEmpty
+                            ? const Text(
+                                'No delivery selected.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _MetricTile(
+                                          label: 'Weight',
+                                          value: '$weightKg kg',
+                                          icon: Icons.scale_outlined,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _MetricTile(
+                                          label: 'Price',
+                                          value: priceLabel,
+                                          icon: Icons.payments_outlined,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                   ),
@@ -149,9 +296,9 @@ class DriverDrivingPage extends StatelessWidget {
                                 right: 10,
                                 bottom: 10,
                                 child: _RouteOverlay(
-                                  currentLocation: currentLocation,
-                                  pickups: pickups,
-                                  deliveries: deliveries,
+                                  currentLocation: widget.currentLocation,
+                                  pickupOrigins: pickupOrigins,
+                                  deliveryDestinations: deliveryDestinations,
                                 ),
                               ),
                             ],
@@ -161,7 +308,6 @@ class DriverDrivingPage extends StatelessWidget {
                     ),
                   ),
 
-                  // Optional note under the map
                   // Navigation notes card
                   SliverToBoxAdapter(
                     child: Padding(
@@ -176,59 +322,81 @@ class DriverDrivingPage extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                  // Bottom padding so content doesn’t hide behind the fixed button
+                  const SliverToBoxAdapter(child: SizedBox(height: 90)),
                 ],
               ),
             ),
-
-            const SizedBox(height: 4),
           ],
         ),
       ),
 
-      // Bottom nav: same style as other driver screens
-      bottomNavigationBar: BottomNav(
-        role: UserRole.driver,
-        current: AppTab.middle,
-        onHome: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DriverHomePage()),
-          );
-        },
-        onMiddle: () {}, // already here
-        onAccount: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AccountPage()),
-          );
-        },
+      // ✅ Fixed "Delivered" button at bottom
+      bottomSheet: SafeArea(
+        child: Container(
+          color: GreenTheme.softBg,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: (_delivering || widget.deliveries.isEmpty)
+                  ? null
+                  : _markDelivered,
+              icon: _delivering
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.check_circle_outline),
+              label: Text(
+                _delivering
+                    ? 'Updating…'
+                    : (widget.deliveries.length > 1
+                          ? 'Delivered — Next'
+                          : 'Delivered'),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: GreenTheme.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade300,
+                disabledForegroundColor: Colors.grey.shade600,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Overlay that shows current location + pickup & delivery locations (only)
+/// Overlay showing current location + PICKUP origins + DELIVERY destinations
 class _RouteOverlay extends StatelessWidget {
   const _RouteOverlay({
     required this.currentLocation,
-    required this.pickups,
-    required this.deliveries,
+    required this.pickupOrigins,
+    required this.deliveryDestinations,
   });
 
   final String currentLocation;
-  final List<PickupInfo> pickups;
-  final List<DeliveryInfo> deliveries;
+  final List<String> pickupOrigins;
+  final List<String> deliveryDestinations;
 
   @override
   Widget build(BuildContext context) {
-    // Unique pickup origins
-    final pickupLocations = <String>{for (final p in pickups) p.to}.toList();
-
-    // Unique delivery destinations (stall names)
-    final deliveryLocations = <String>{
-      for (final d in deliveries) d.toStall,
-    }.toList();
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -248,7 +416,7 @@ class _RouteOverlay extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Current location row
+          // Current location
           Row(
             children: [
               const Icon(
@@ -270,22 +438,20 @@ class _RouteOverlay extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 6),
 
-          // PICK-UP LOCATIONS (one line)
-          if (pickupLocations.isNotEmpty) ...[
+          if (pickupOrigins.isNotEmpty) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const _SectionLabel(
                   icon: Icons.agriculture_outlined,
-                  text: 'Pick-up:',
+                  text: 'Pick-up (origin):',
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _LocationChips(
-                    locations: pickupLocations,
+                    locations: pickupOrigins,
                     singleLine: true,
                   ),
                 ),
@@ -294,19 +460,18 @@ class _RouteOverlay extends StatelessWidget {
             const SizedBox(height: 8),
           ],
 
-          // DELIVERY LOCATIONS (one line)
-          if (deliveryLocations.isNotEmpty) ...[
+          if (deliveryDestinations.isNotEmpty) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const _SectionLabel(
                   icon: Icons.local_mall_outlined,
-                  text: 'Delivery:',
+                  text: 'Delivery (destination):',
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _LocationChips(
-                    locations: deliveryLocations,
+                    locations: deliveryDestinations,
                     singleLine: true,
                   ),
                 ),
@@ -386,6 +551,7 @@ class _DetailCard extends StatelessWidget {
   const _DetailCard({required this.title, required this.child});
   final String title;
   final Widget child;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -417,6 +583,142 @@ class _DetailCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.text, required this.icon});
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: GreenTheme.primary.withAlpha((0.08 * 255).round()),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: GreenTheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: GreenTheme.primary,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KeyValueRow extends StatelessWidget {
+  const _KeyValueRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: GreenTheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black87,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black12),
+        color: Colors.white,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: GreenTheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

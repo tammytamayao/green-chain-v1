@@ -1,10 +1,9 @@
 // lib/api/api_client.dart
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:green_chain_v1/api/auth_api.dart';
 
-const String _base = apiBase; // apiBase should be defined in auth_api.dart
+const String _base = apiBase;
 
 Uri _u(String p) => Uri.parse('$_base$p');
 
@@ -13,10 +12,14 @@ class ApiClient {
 
   Future<Map<String, String>> _authHeaders() async {
     final token = await getToken();
-    if (token == null) {
-      throw Exception('Not authenticated');
-    }
+    if (token == null) throw Exception('Not authenticated');
     return {'Authorization': 'Bearer $token'};
+  }
+
+  dynamic _decodeBody(http.Response res) {
+    final body = res.body.trim();
+    if (body.isEmpty) return null;
+    return jsonDecode(body);
   }
 
   Future<T> getJson<T>(String path, {T Function(dynamic json)? parser}) async {
@@ -27,7 +30,7 @@ class ApiClient {
       throw Exception('GET $path failed: ${res.statusCode} ${res.body}');
     }
 
-    final decoded = jsonDecode(res.body);
+    final decoded = _decodeBody(res);
     return parser != null ? parser(decoded) : decoded as T;
   }
 
@@ -51,7 +54,7 @@ class ApiClient {
       throw Exception('POST $path failed: ${res.statusCode} ${res.body}');
     }
 
-    final decoded = jsonDecode(res.body);
+    final decoded = _decodeBody(res);
     return parser != null ? parser(decoded) : decoded as T;
   }
 
@@ -75,7 +78,7 @@ class ApiClient {
       throw Exception('PATCH $path failed: ${res.statusCode} ${res.body}');
     }
 
-    final decoded = jsonDecode(res.body);
+    final decoded = _decodeBody(res);
     return parser != null ? parser(decoded) : decoded as T;
   }
 
@@ -89,5 +92,4 @@ class ApiClient {
   }
 }
 
-// simple singleton
 const apiClient = ApiClient();

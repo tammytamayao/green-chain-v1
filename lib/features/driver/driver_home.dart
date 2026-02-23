@@ -35,24 +35,16 @@ class _DriverHomePageState extends State<DriverHomePage> {
     try {
       final p = await me().timeout(const Duration(seconds: 8));
       if (!mounted) return;
+
       final profile = p ?? {};
 
       final rawVehicles = (profile['vehicles'] is List)
           ? List<Map<String, dynamic>>.from(profile['vehicles'])
           : <Map<String, dynamic>>[];
 
-      final fallback = <Map<String, dynamic>>[
-        {
-          'model': 'Ford Ranger',
-          'class': 'Pick-up',
-          'plate_number': 'EAS 2024',
-        },
-        {'model': 'HiAce', 'class': 'Van', 'plate_number': 'NFD 5832'},
-      ];
-
       setState(() {
         _profile = profile;
-        _vehicles = rawVehicles.isNotEmpty ? rawVehicles : fallback;
+        _vehicles = rawVehicles; // ✅ dynamic from backend
         _selectedVehicleIndex = 0;
         _error = null;
       });
@@ -247,16 +239,21 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         ),
                       ),
 
-                      // Vehicle chooser
+                      // Vehicle chooser (dynamic)
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         sliver: SliverToBoxAdapter(
-                          child: _VehicleCard(
-                            vehicles: _vehicles,
-                            selectedIndex: _selectedVehicleIndex,
-                            onChanged: (i) =>
-                                setState(() => _selectedVehicleIndex = i),
-                          ),
+                          child: (_vehicles.isEmpty)
+                              ? const _NoVehicleCard()
+                              : _VehicleCard(
+                                  vehicles: _vehicles,
+                                  selectedIndex: _selectedVehicleIndex.clamp(
+                                    0,
+                                    _vehicles.length - 1,
+                                  ),
+                                  onChanged: (i) =>
+                                      setState(() => _selectedVehicleIndex = i),
+                                ),
                         ),
                       ),
 
@@ -283,7 +280,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         builder: (_) => DriverDrivePage(
                           currentLocation: currentLocation,
                           selectedVehicle: (_vehicles.isNotEmpty)
-                              ? _vehicles[_selectedVehicleIndex]
+                              ? _vehicles[_selectedVehicleIndex.clamp(
+                                  0,
+                                  _vehicles.length - 1,
+                                )]
                               : null,
                         ),
                       ),
@@ -316,7 +316,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
               builder: (_) => DriverDrivePage(
                 currentLocation: currentLocation,
                 selectedVehicle: (_vehicles.isNotEmpty)
-                    ? _vehicles[_selectedVehicleIndex]
+                    ? _vehicles[_selectedVehicleIndex.clamp(
+                        0,
+                        _vehicles.length - 1,
+                      )]
                     : null,
               ),
             ),
@@ -442,6 +445,43 @@ class _VehicleCard extends StatelessWidget {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoVehicleCard extends StatelessWidget {
+  const _NoVehicleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: GreenTheme.primary.withAlpha((0.15 * 255).round()),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.03 * 255).round()),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: const [
+          Icon(Icons.directions_car_outlined, color: GreenTheme.primary),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'No vehicles registered yet.',
+              style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
         ],

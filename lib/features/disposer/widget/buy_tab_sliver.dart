@@ -1,7 +1,12 @@
-import 'package:flutter/material.dart';
+// widget/buy_tab_sliver.dart (modified)
+// Changes:
+// - status derivation simplified (your demands cache is OPEN-only)
+// - "Completed" won't appear here because GET /demands returns only open
 
+import 'package:flutter/material.dart';
 import '../disposer_orders_model.dart';
 import 'buy_card.dart';
+import 'package:green_chain_v1/models/demand.dart';
 
 class BuyTabSliver extends StatelessWidget {
   const BuyTabSliver({
@@ -12,6 +17,7 @@ class BuyTabSliver extends StatelessWidget {
     this.onDeleteRequest,
     required this.processingByProductId,
     this.onProcessRequest,
+    required this.demandsByProductId,
   });
 
   final List<MarketItem> items;
@@ -20,9 +26,10 @@ class BuyTabSliver extends StatelessWidget {
   final void Function(MarketItem item, double value) onSaveRequest;
   final void Function(MarketItem item)? onDeleteRequest;
 
-  /// Called when disposer taps "Process" on a request card.
-  /// The page will show the allocation dialog + update inventory.
   final void Function(MarketItem item)? onProcessRequest;
+
+  /// OPEN-only demand map used to derive "Processing" label
+  final Map<int, Demand> demandsByProductId;
 
   @override
   Widget build(BuildContext context) {
@@ -37,11 +44,17 @@ class BuyTabSliver extends StatelessWidget {
           final hasRequest = requested != null && requested > 0;
           final isProcessing = processingByProductId[item.productId] ?? false;
 
+          final demand = demandsByProductId[item.productId];
+          final String? status = (demand != null && demand.requestsCount > 0)
+              ? 'Processing'
+              : null;
+
           return BuyCard(
             item: item,
             initialRequest: requested,
             hasRequest: hasRequest,
             isProcessing: isProcessing,
+            status: status,
             onSave: (double value) => onSaveRequest(item, value),
             onDelete: onDeleteRequest == null
                 ? null

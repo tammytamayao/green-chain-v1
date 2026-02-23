@@ -4,10 +4,9 @@ class ConsumerOrder {
   final String method;
   final String status; // processing, accepted, rejected, completed, cancelled
 
-  /// ✅ how many kg the consumer ordered (from backend `weight`)
+  /// backend `weight`
   final double weight;
 
-  final int? deliveryId;
   final int stallInventoryId;
   final int consumerId;
 
@@ -35,8 +34,7 @@ class ConsumerOrder {
     required this.amount,
     required this.method,
     required this.status,
-    required this.weight, // 👈 renamed & required
-    required this.deliveryId,
+    required this.weight,
     required this.stallInventoryId,
     required this.consumerId,
     required this.stocks,
@@ -60,11 +58,8 @@ class ConsumerOrder {
       amount: (json['amount'] as num).toDouble(),
       method: json['method'] as String,
       status: (json['status'] as String?) ?? 'processing',
-
-      /// ✅ backend sends `weight`
       weight: (json['weight'] as num).toDouble(),
 
-      deliveryId: json['delivery_id'] as int?,
       stallInventoryId: json['stall_inventory_id'] as int,
       consumerId: json['consumer_id'] as int,
 

@@ -1,4 +1,5 @@
 // lib/models/supply_request.dart
+import 'package:green_chain_v1/models/delivery.dart';
 
 class Supply {
   final int id;
@@ -101,12 +102,15 @@ class StallInfo {
 class RequestWithContext {
   final int id;
   final double price;
-  final String method; // "gcash" or "cash"
-  final String status; // "processing", "accepted", "rejected", "completed"
+  final String method; // gcash/cash
+  final String status; // processing/accepted/rejected/completed
   final int supplyId;
   final int demandId;
   final FarmInfo farm;
   final StallInfo stall;
+
+  /// ✅ NEW: present only when accepted transition (PATCH /requests/:id)
+  final Delivery? delivery;
 
   RequestWithContext({
     required this.id,
@@ -117,6 +121,7 @@ class RequestWithContext {
     required this.demandId,
     required this.farm,
     required this.stall,
+    this.delivery,
   });
 
   factory RequestWithContext.fromJson(Map<String, dynamic> json) {
@@ -124,11 +129,14 @@ class RequestWithContext {
       id: json['id'] as int,
       price: (json['price'] as num).toDouble(),
       method: json['method'] as String,
-      status: json['status'] as String,
+      status: (json['status'] as String?) ?? 'processing',
       supplyId: json['supply_id'] as int,
       demandId: json['demand_id'] as int,
       farm: FarmInfo.fromJson(json['farm'] as Map<String, dynamic>),
       stall: StallInfo.fromJson(json['stall'] as Map<String, dynamic>),
+      delivery: json['delivery'] == null
+          ? null
+          : Delivery.fromJson(json['delivery'] as Map<String, dynamic>),
     );
   }
 
@@ -141,11 +149,11 @@ class RequestWithContext {
     'demand_id': demandId,
     'farm': farm.toJson(),
     'stall': stall.toJson(),
+    'delivery': delivery?.toJson(),
   };
 }
 
-/// Response for POST /supplies:
-/// { "supply": {...}, "request": {...} }
+/// Response for POST /supplies: { "supply": {...}, "request": {...} }
 class SupplyAndRequestResponse {
   final Supply supply;
   final RequestWithContext request;

@@ -1,12 +1,14 @@
+// lib/api/order_api.dart
 import 'package:green_chain_v1/api/api_client.dart';
 import 'package:green_chain_v1/models/order.dart';
+import 'package:green_chain_v1/models/order_create_response.dart';
 
 /// GET /orders
 Future<List<ConsumerOrder>> fetchOrders() {
   return apiClient.getJson<List<ConsumerOrder>>(
     '/orders',
     parser: (json) {
-      final list = json as List<dynamic>;
+      final list = (json as List<dynamic>? ?? const []);
       return list
           .map((e) => ConsumerOrder.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -15,28 +17,29 @@ Future<List<ConsumerOrder>> fetchOrders() {
 }
 
 /// POST /orders
-Future<ConsumerOrder> createOrder({
+Future<OrderCreateResponse> createOrder({
   required int stallInventoryId,
   required double amount,
   required String method, // "gcash" | "cash"
-  required double weightKg, // ✅ backend expects "weight"
+  required double weightKg,
 }) {
-  return apiClient.postJson<ConsumerOrder>(
+  return apiClient.postJson<OrderCreateResponse>(
     '/orders',
     body: {
       'stall_inventory_id': stallInventoryId,
       'amount': amount,
       'method': method,
-      'weight': weightKg, // ✅
+      'weight': weightKg,
     },
-    parser: (json) => ConsumerOrder.fromJson(json as Map<String, dynamic>),
+    parser: (json) =>
+        OrderCreateResponse.fromJson(json as Map<String, dynamic>),
   );
 }
 
-/// PATCH /orders/<id>/status  ✅ Disposer action
+/// PATCH /orders/<id>/status  (disposer-only)
 Future<ConsumerOrder> updateOrderStatus({
   required int orderId,
-  required String status, // accepted/rejected/completed/cancelled/processing
+  required String status,
 }) {
   return apiClient.patchJson<ConsumerOrder>(
     '/orders/$orderId/status',
@@ -45,10 +48,11 @@ Future<ConsumerOrder> updateOrderStatus({
   );
 }
 
+/// PATCH /orders/<id>/receive (consumer-only)
 Future<ConsumerOrder> receiveOrder({required int orderId}) {
   return apiClient.patchJson<ConsumerOrder>(
     '/orders/$orderId/receive',
-    body: {}, // no body needed
+    body: const {},
     parser: (json) => ConsumerOrder.fromJson(json as Map<String, dynamic>),
   );
 }
