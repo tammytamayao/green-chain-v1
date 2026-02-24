@@ -2,6 +2,7 @@
 import 'package:green_chain_v1/api/api_client.dart';
 import 'package:green_chain_v1/models/order.dart';
 import 'package:green_chain_v1/models/order_create_response.dart';
+import 'package:green_chain_v1/models/order_status_update_response.dart';
 
 /// GET /orders
 Future<List<ConsumerOrder>> fetchOrders() {
@@ -37,14 +38,15 @@ Future<OrderCreateResponse> createOrder({
 }
 
 /// PATCH /orders/<id>/status  (disposer-only)
-Future<ConsumerOrder> updateOrderStatus({
+Future<OrderStatusUpdateResponse> updateOrderStatus({
   required int orderId,
   required String status,
 }) {
-  return apiClient.patchJson<ConsumerOrder>(
+  return apiClient.patchJson<OrderStatusUpdateResponse>(
     '/orders/$orderId/status',
     body: {'status': status},
-    parser: (json) => ConsumerOrder.fromJson(json as Map<String, dynamic>),
+    parser: (json) =>
+        OrderStatusUpdateResponse.fromJson(json as Map<String, dynamic>),
   );
 }
 

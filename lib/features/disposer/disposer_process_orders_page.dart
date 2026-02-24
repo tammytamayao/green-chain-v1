@@ -7,6 +7,7 @@ import 'disposer_home_page.dart';
 
 import 'package:green_chain_v1/api/order_api.dart';
 import 'package:green_chain_v1/models/order.dart';
+import 'package:green_chain_v1/models/order_status_update_response.dart';
 
 class DisposerProcessOrdersPage extends StatefulWidget {
   const DisposerProcessOrdersPage({super.key});
@@ -21,7 +22,6 @@ class _DisposerProcessOrdersPageState extends State<DisposerProcessOrdersPage> {
   String? _error;
   List<ConsumerOrder> _orders = [];
 
-  // Track which order is being updated (accept/reject) to disable buttons + show spinner
   final Set<int> _updatingIds = {};
 
   String _niceNow() {
@@ -87,7 +87,7 @@ class _DisposerProcessOrdersPageState extends State<DisposerProcessOrdersPage> {
     });
 
     try {
-      final updated = await updateOrderStatus(
+      final OrderStatusUpdateResponse resp = await updateOrderStatus(
         orderId: orderId,
         status: nextStatus,
       );
@@ -96,16 +96,21 @@ class _DisposerProcessOrdersPageState extends State<DisposerProcessOrdersPage> {
 
       setState(() {
         final idx = _orders.indexWhere((o) => o.id == orderId);
-        if (idx != -1) _orders[idx] = updated;
+        if (idx != -1) _orders[idx] = resp.order;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            nextStatus == 'accepted' ? 'Order accepted' : 'Order rejected',
-          ),
-        ),
-      );
+      final baseMsg = nextStatus == 'accepted'
+          ? 'Order accepted'
+          : 'Order rejected';
+
+      // ✅ delivery will be created on accept (backend)
+      final deliveryMsg = (nextStatus == 'accepted' && resp.delivery != null)
+          ? ' • Delivery created (#${resp.delivery!.id})'
+          : '';
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$baseMsg$deliveryMsg')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -248,7 +253,6 @@ class _DisposerProcessOrdersPageState extends State<DisposerProcessOrdersPage> {
                     itemBuilder: (context, index) {
                       final order = orders[index];
 
-                      // ✅ ordered amount (kg) from backend: `weight`
                       final qtyText = '${order.weight.toStringAsFixed(1)} kg';
 
                       final title = order.fullProductLabel;
@@ -267,8 +271,6 @@ class _DisposerProcessOrdersPageState extends State<DisposerProcessOrdersPage> {
                         amount: order.amount,
                         statusLabel: order.statusLabel,
                         statusRaw: order.status,
-
-                        // ✅ show buttons only while processing
                         showDecisionButtons: isProcessing,
                         updating: isUpdating,
                         onAccept: () => _setOrderStatus(
@@ -371,7 +373,6 @@ class _ProcessOrderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top row: title + amount
                     Row(
                       children: [
                         Expanded(
@@ -397,8 +398,6 @@ class _ProcessOrderCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-
-                    // Subtitle
                     Text(
                       subtitle,
                       style: TextStyle(
@@ -410,7 +409,6 @@ class _ProcessOrderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-                    // ACTION AREA
                     if (showDecisionButtons)
                       Row(
                         children: [

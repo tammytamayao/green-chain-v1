@@ -1,16 +1,14 @@
 import 'package:green_chain_v1/models/order.dart';
 import 'package:green_chain_v1/models/delivery.dart';
 
-class OrderCreateResponse {
+class OrderStatusUpdateResponse {
   final ConsumerOrder order;
-
-  /// ✅ nullable now
   final Delivery? delivery;
 
-  OrderCreateResponse({required this.order, this.delivery});
+  OrderStatusUpdateResponse({required this.order, this.delivery});
 
-  factory OrderCreateResponse.fromJson(Map<String, dynamic> json) {
-    return OrderCreateResponse(
+  factory OrderStatusUpdateResponse.fromJson(Map<String, dynamic> json) {
+    return OrderStatusUpdateResponse(
       order: ConsumerOrder.fromJson(json['order'] as Map<String, dynamic>),
       delivery: json['delivery'] == null
           ? null
